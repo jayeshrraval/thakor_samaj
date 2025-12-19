@@ -1,45 +1,32 @@
-import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import { Handshake } from 'lucide-react';
 
 export default function SplashScreen() {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    // Auto-navigate to login after 3 seconds
-    const timer = setTimeout(() => {
-      navigate('/login');
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, [navigate]);
-
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-deep-blue via-[#1A8FA3] to-[#0B4F6C] flex flex-col items-center justify-center overflow-hidden">
+    <div className="fixed inset-0 bg-gradient-to-br from-[#0A2647] via-[#144272] to-[#205295] flex flex-col items-center justify-center overflow-hidden z-[9999]">
       {/* Radial Gold Glow */}
       <div className="absolute inset-0 flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 0.3, scale: 1.5 }}
-          transition={{ duration: 1.5, repeat: Infinity, repeatType: 'reverse' }}
-          className="w-96 h-96 rounded-full bg-royal-gold blur-3xl"
+          transition={{ duration: 2, repeat: Infinity, repeatType: 'reverse' }}
+          className="w-96 h-96 rounded-full bg-[#D4AF37] blur-3xl"
         />
       </div>
 
       {/* Floating Particles */}
-      <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {[...Array(20)].map((_, i) => (
           <motion.div
             key={i}
             initial={{ 
               opacity: 0,
-              x: Math.random() * window.innerWidth,
-              y: Math.random() * window.innerHeight 
+              x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000),
+              y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1000) 
             }}
             animate={{
               opacity: [0, 0.5, 0],
-              y: [null, Math.random() * -200],
+              y: [null, -100],
             }}
             transition={{
               duration: 3 + Math.random() * 2,
@@ -60,10 +47,8 @@ export default function SplashScreen() {
           transition={{ duration: 0.8, type: 'spring' }}
           className="relative"
         >
-          {/* Outer Gold Ring */}
-          <div className="w-32 h-32 rounded-full border-4 border-royal-gold flex items-center justify-center shadow-gold">
-            {/* Inner Gradient Circle */}
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-royal-gold to-[#C29F30] flex items-center justify-center">
+          <div className="w-32 h-32 rounded-full border-4 border-[#D4AF37] flex items-center justify-center shadow-[0_0_20px_rgba(212,175,55,0.4)]">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#C29F30] flex items-center justify-center">
               <Handshake className="w-12 h-12 text-white" strokeWidth={2} />
             </div>
           </div>
@@ -79,7 +64,7 @@ export default function SplashScreen() {
           <h1 className="text-4xl font-bold text-white font-gujarati">
             યોગી સમાજ સંબંધ
           </h1>
-          <p className="text-xl text-mint font-medium">
+          <p className="text-xl text-[#9FD7C1] font-medium">
             Community Connection
           </p>
         </motion.div>
@@ -95,20 +80,14 @@ export default function SplashScreen() {
             <p className="text-white text-sm font-gujarati font-medium">
               સંસ્કૃતિ • સંબંધ • સેવા
             </p>
-            <p className="text-mint text-xs font-medium">
+            <p className="text-[#9FD7C1] text-xs font-medium uppercase tracking-wider">
               Culture • Connection • Service
             </p>
           </div>
         </motion.div>
 
         {/* Loading Indicator */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.2 }}
-          className="flex flex-col items-center space-y-4 pt-8"
-        >
-          {/* 3-Dot Loader */}
+        <div className="flex flex-col items-center space-y-4 pt-8">
           <div className="flex space-x-2">
             {[0, 1, 2].map((i) => (
               <motion.div
@@ -126,20 +105,20 @@ export default function SplashScreen() {
               />
             ))}
           </div>
-          <p className="text-white/80 text-sm">Loading...</p>
-        </motion.div>
+          <p className="text-white/60 text-sm animate-pulse">સીસ્ટમ તૈયાર થઈ રહી છે...</p>
+        </div>
       </div>
 
       {/* Bottom Info */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ delay: 1.5 }}
-        className="absolute bottom-12 text-center space-y-2 px-6"
+        className="absolute bottom-10 text-center space-y-1 px-6"
       >
-        <p className="text-white/60 text-xs">Version 1.0.0</p>
-        <p className="text-mint text-sm font-gujarati">
-          રાવળ યોગી સમાજ માટે બનાવેલ
+        <p className="text-white/40 text-[10px] uppercase tracking-[0.2em]">Version 1.0.0</p>
+        <p className="text-[#9FD7C1] text-sm font-gujarati">
+          રાવળ યોગી સમાજ ડિજિટલ પ્લેટફોર્મ
         </p>
       </motion.div>
     </div>
