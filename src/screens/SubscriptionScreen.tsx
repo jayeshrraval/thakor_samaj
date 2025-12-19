@@ -1,10 +1,15 @@
-import { Check, Crown, Zap } from 'lucide-react';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Check, Crown, Zap, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import BottomNav from '../components/BottomNav';
 
 export default function SubscriptionScreen() {
+  const navigate = useNavigate();
+
   const plans = [
     {
+      id: 'monthly',
       name: 'માસિક પ્લાન',
       nameEn: 'Monthly Plan',
       price: '₹49',
@@ -14,6 +19,7 @@ export default function SubscriptionScreen() {
       badge: null,
     },
     {
+      id: 'yearly',
       name: 'વાર્ષિક પ્લાન',
       nameEn: 'Yearly Plan',
       price: '₹480',
@@ -40,10 +46,21 @@ export default function SubscriptionScreen() {
     'Ad-free experience',
   ];
 
+  const handleSubscribe = (planName: string) => {
+    alert(`તમે ${planName} પસંદ કર્યો છે. પેમેન્ટ સુવિધા ટૂંક સમયમાં શરૂ થશે.`);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-deep-blue via-[#1A8FA3] to-mint pb-24">
       {/* Header */}
-      <div className="safe-area-top px-6 py-8 text-center">
+      <div className="safe-area-top px-6 py-8 text-center relative">
+        <button 
+            onClick={() => navigate(-1)} 
+            className="absolute top-8 left-6 p-2 bg-white/20 rounded-full text-white"
+        >
+            <ArrowLeft className="w-6 h-6" />
+        </button>
+
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -67,7 +84,7 @@ export default function SubscriptionScreen() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.2 }}
-              className="premium-card p-6 relative overflow-hidden"
+              className="premium-card p-6 relative overflow-hidden bg-white rounded-3xl shadow-lg"
             >
               {plan.badge && (
                 <div className="absolute top-4 right-4 bg-gradient-to-r from-royal-gold to-yellow-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-gold">
@@ -99,7 +116,10 @@ export default function SubscriptionScreen() {
                 )}
               </div>
 
-              <button className={`w-full bg-gradient-to-r ${plan.color} text-white font-gujarati font-semibold py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all active:scale-95`}>
+              <button 
+                onClick={() => handleSubscribe(plan.name)}
+                className={`w-full bg-gradient-to-r ${plan.color} text-white font-gujarati font-semibold py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all active:scale-95`}
+              >
                 પ્લાન સબ્સ્ક્રાઇબ કરો
               </button>
             </motion.div>
@@ -111,7 +131,7 @@ export default function SubscriptionScreen() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="premium-card p-6"
+          className="premium-card p-6 bg-white rounded-3xl"
         >
           <h3 className="font-gujarati font-bold text-xl text-gray-800 mb-6">
             સબ્સ્ક્રિપ્શન લાભો

@@ -1,11 +1,12 @@
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, 
-  BookOpen,
-  GraduationCap,
-  Star,
-  Newspaper
+  BookOpen, 
+  GraduationCap, 
+  Star, 
+  Newspaper 
 } from 'lucide-react';
 import BottomNav from '../components/BottomNav';
 
@@ -26,28 +27,28 @@ export default function EducationHubScreen() {
       title: 'વિદ્યાર્થી પ્રોફાઈલ',
       subtitle: 'વિદ્યાર્થીઓની માહિતી જુઓ અને ઉમેરો',
       gradient: 'from-blue-500 to-indigo-600',
-      path: '/education/students',
+      path: '/student-profile', // ✅ Corrected Path
     },
     {
       icon: GraduationCap,
       title: 'સ્કોલરશિપ અને સહાય',
       subtitle: 'સ્કોલરશિપની માહિતી મેળવો',
       gradient: 'from-emerald-500 to-teal-600',
-      path: '/education/scholarships',
+      path: '/scholarship', // ✅ Corrected Path
     },
     {
       icon: Star,
       title: 'સમાજના ગૌરવ',
       subtitle: 'સમાજના સફળ વ્યક્તિઓની ઓળખ',
       gradient: 'from-amber-500 to-orange-600',
-      path: '/education/achievers',
+      path: '/achievers', // ✅ Corrected Path
     },
     {
       icon: Newspaper,
       title: 'આજનું શિક્ષણ માર્ગદર્શન',
       subtitle: 'દૈનિક શિક્ષણ માર્ગદર્શન પોસ્ટ',
       gradient: 'from-rose-500 to-pink-600',
-      path: '/education/daily-guidance',
+      path: '/daily-guidance', // ✅ Corrected Path
     },
   ];
 

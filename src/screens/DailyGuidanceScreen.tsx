@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
   Newspaper,
@@ -9,12 +9,22 @@ import {
   AlertTriangle,
   ChevronRight,
   Calendar,
+  Loader2
 } from 'lucide-react';
 import BottomNav from '../components/BottomNav';
-import type { GuidancePost } from '../types/education';
-import { getGuidancePosts, getTodayGuidance } from '../services/educationApi';
+import { supabase } from '../supabaseClient';
 
-const topicConfig = {
+// ડેટાબેઝના ડેટાનું ફોર્મેટ
+interface GuidancePost {
+  id: number;
+  title: string;
+  content: string; // અથવા quote
+  topic: 'career' | 'skills' | 'myths' | 'general';
+  display_date: string;
+  image_url?: string;
+}
+
+const topicConfig: any = {
   career: {
     icon: Briefcase,
     label: 'Career Awareness',
@@ -58,24 +68,37 @@ export default function DailyGuidanceScreen() {
   }, []);
 
   const fetchData = async () => {
-    setLoading(true);
-    
-    // Fetch today's guidance
-    const todayResponse = await getTodayGuidance();
-    if (todayResponse.success && todayResponse.data) {
-      setTodayPost(todayResponse.data);
-    }
+    try {
+      setLoading(true);
+      
+      const todayDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
-    // Fetch all posts
-    const postsResponse = await getGuidancePosts();
-    if (postsResponse.success && postsResponse.data) {
-      setPosts(postsResponse.data);
+      // Fetch all posts ordered by date
+      const { data, error } = await supabase
+        .from('daily_guidance')
+        .select('*')
+        .order('display_date', { ascending: false });
+
+      if (error) throw error;
+
+      if (data) {
+        setPosts(data);
+        
+        // આજની પોસ્ટ શોધો
+        const today = data.find((p: any) => p.display_date === todayDate);
+        if (today) setTodayPost(today);
+        // જો આજની ન હોય, તો સૌથી તાજેતરની (First) બતાવો
+        else if (data.length > 0) setTodayPost(data[0]);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
     const date = new Date(dateStr);
     return date.toLocaleDateString('gu-IN', {
       day: 'numeric',
@@ -89,7 +112,8 @@ export default function DailyGuidanceScreen() {
     : posts;
 
   const renderPostCard = (post: GuidancePost, index: number) => {
-    const config = topicConfig[post.topic];
+    // જો ટોપિક મેચ ન થાય તો ડિફોલ્ટ 'general' લેવું
+    const config = topicConfig[post.topic] || topicConfig['general'];
     const Icon = config.icon;
 
     return (
@@ -107,17 +131,17 @@ export default function DailyGuidanceScreen() {
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-gujarati font-semibold text-gray-800 line-clamp-1">
-              {post.title}
+              {post.title || 'No Title'}
             </h3>
             <p className="text-gray-500 text-xs font-gujarati mt-1 line-clamp-2">
-              {post.content}
+              {post.content || 'વાંચવા માટે ક્લિક કરો...'}
             </p>
             <div className="flex items-center justify-between mt-2">
               <span className={`px-2 py-0.5 rounded-full text-xs font-gujarati ${config.bgColor} ${config.textColor}`}>
                 {config.label}
               </span>
               <span className="text-gray-400 text-xs">
-                {formatDate(post.publishDate)}
+                {formatDate(post.display_date)}
               </span>
             </div>
           </div>
@@ -195,7 +219,7 @@ export default function DailyGuidanceScreen() {
           >
             બધા
           </button>
-          {Object.entries(topicConfig).map(([key, config]) => (
+          {Object.entries(topicConfig).map(([key, config]: any) => (
             <button
               key={key}
               onClick={() => setFilterTopic(key)}
@@ -219,7 +243,7 @@ export default function DailyGuidanceScreen() {
         
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="w-8 h-8 border-4 border-rose-500 border-t-transparent rounded-full animate-spin" />
+            <Loader2 className="w-8 h-8 text-rose-500 animate-spin" />
           </div>
         ) : filteredPosts.length === 0 ? (
           <motion.div
@@ -239,61 +263,68 @@ export default function DailyGuidanceScreen() {
       </div>
 
       {/* Detail Modal */}
-      {selectedPost && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 z-50 flex items-end"
-          onClick={() => setSelectedPost(null)}
-        >
+      <AnimatePresence>
+        {selectedPost && (
           <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            onClick={(e) => e.stopPropagation()}
-            className="w-full bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-end"
+            onClick={() => setSelectedPost(null)}
           >
-            <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-100">
-              <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
-              <div className="flex items-center space-x-3">
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${topicConfig[selectedPost.topic].color} flex items-center justify-center`}>
-                  {(() => {
-                    const Icon = topicConfig[selectedPost.topic].icon;
-                    return <Icon className="w-5 h-5 text-white" />;
-                  })()}
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto"
+            >
+              <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-100">
+                <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
+                <div className="flex items-center space-x-3">
+                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${topicConfig[selectedPost.topic]?.color || topicConfig['general'].color} flex items-center justify-center`}>
+                    {(() => {
+                      const Icon = topicConfig[selectedPost.topic]?.icon || topicConfig['general'].icon;
+                      return <Icon className="w-5 h-5 text-white" />;
+                    })()}
+                  </div>
+                  <div>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-gujarati ${topicConfig[selectedPost.topic]?.bgColor || 'bg-gray-100'} ${topicConfig[selectedPost.topic]?.textColor || 'text-gray-700'}`}>
+                      {topicConfig[selectedPost.topic]?.label || 'General'}
+                    </span>
+                    <p className="text-gray-400 text-xs mt-1">
+                      {formatDate(selectedPost.display_date)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-gujarati ${topicConfig[selectedPost.topic].bgColor} ${topicConfig[selectedPost.topic].textColor}`}>
-                    {topicConfig[selectedPost.topic].label}
-                  </span>
-                  <p className="text-gray-400 text-xs mt-1">
-                    {formatDate(selectedPost.publishDate)}
+              </div>
+
+              <div className="px-6 py-4">
+                <h2 className="font-gujarati font-bold text-xl text-gray-800 mb-4">
+                  {selectedPost.title}
+                </h2>
+                
+                {selectedPost.image_url && (
+                    <img src={selectedPost.image_url} className="w-full h-48 object-cover rounded-xl mb-4" alt="Post" />
+                )}
+
+                <div className="prose prose-sm">
+                  <p className="text-gray-700 font-gujarati text-sm leading-relaxed whitespace-pre-line">
+                    {selectedPost.content}
                   </p>
                 </div>
-              </div>
-            </div>
 
-            <div className="px-6 py-4">
-              <h2 className="font-gujarati font-bold text-xl text-gray-800 mb-4">
-                {selectedPost.title}
-              </h2>
-              <div className="prose prose-sm">
-                <p className="text-gray-700 font-gujarati text-sm leading-relaxed whitespace-pre-line">
-                  {selectedPost.content}
-                </p>
+                <button
+                  onClick={() => setSelectedPost(null)}
+                  className="w-full mt-6 py-3 border border-gray-200 rounded-xl font-gujarati text-gray-600"
+                >
+                  બંધ કરો
+                </button>
               </div>
-
-              <button
-                onClick={() => setSelectedPost(null)}
-                className="w-full mt-6 py-3 border border-gray-200 rounded-xl font-gujarati text-gray-600"
-              >
-                બંધ કરો
-              </button>
-            </div>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
+        )}
+      </AnimatePresence>
 
       <BottomNav />
     </div>

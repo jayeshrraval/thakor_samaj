@@ -1,10 +1,78 @@
+import React, { useEffect, useState } from 'react';
 import { Bell, Settings, Heart, Search, MessageCircle, User, CreditCard, Building2, Bot, Users, GraduationCap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import BottomNav from '../components/BottomNav';
+import { supabase } from '../supabaseClient'; // Make sure this path is correct
 
 export default function HomeScreen() {
   const navigate = useNavigate();
+  const [userName, setUserName] = useState('Guest User');
+  const [loading, setLoading] = useState(true);
+  
+  // આંકડા માટે સ્ટેટ
+  const [statsData, setStatsData] = useState({
+    profiles: 0,
+    interests: 0,
+    messages: 0
+  });
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      // 1. Get Current User
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Fetch User Details if available in 'users' table or metadata
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+        
+        if (userProfile?.full_name) {
+          setUserName(userProfile.full_name);
+        } else {
+            // Fallback to metadata if table is empty
+            setUserName(user.user_metadata?.full_name || 'Yogi Member');
+        }
+
+        // 2. Fetch Stats counts (Real Data)
+        
+        // Count Matrimony Profiles (as "Profiles Viewed/Available")
+        const { count: profileCount } = await supabase
+          .from('matrimony_profiles')
+          .select('*', { count: 'exact', head: true });
+
+        // Count Requests (as "Ras Dakhavya")
+        const { count: interestCount } = await supabase
+          .from('requests')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id); // Only my requests
+
+        // Count Messages
+        // (Assuming 'messages' table exists from previous SQL)
+        const { count: messageCount } = await supabase
+            .from('messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('is_read', false); // Unread messages
+
+        setStatsData({
+            profiles: profileCount || 0,
+            interests: interestCount || 0,
+            messages: messageCount || 0
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const featureCards = [
     { icon: Heart, title: 'મેટ્રિમોની પ્રોફાઈલ', color: 'from-pink-400 to-rose-500', path: '/matrimony' },
@@ -20,9 +88,9 @@ export default function HomeScreen() {
   ];
 
   const stats = [
-    { label: 'Profiles viewed', value: '24', color: 'text-mint' },
-    { label: 'રસ દાખવ્યો', value: '12', color: 'text-royal-gold' },
-    { label: 'Messages', value: '8', color: 'text-deep-blue' },
+    { label: 'Profiles Available', value: statsData.profiles.toString(), color: 'text-mint' },
+    { label: 'રસ દાખવ્યો', value: statsData.interests.toString(), color: 'text-royal-gold' },
+    { label: 'Messages', value: statsData.messages.toString(), color: 'text-deep-blue' },
   ];
 
   return (
@@ -37,7 +105,7 @@ export default function HomeScreen() {
               </div>
               <div>
                 <h1 className="text-white font-gujarati font-bold text-lg">
-                  યોગી સમાજ સંબંધ
+                  {loading ? 'Welcome...' : `જય સ્વામિનારાયણ, ${userName}`}
                 </h1>
                 <p className="text-mint text-xs">Community Connection</p>
               </div>
@@ -48,7 +116,10 @@ export default function HomeScreen() {
                 className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center relative"
               >
                 <Bell className="w-5 h-5 text-white" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                {/* Show red dot only if there are notifications/messages */}
+                {statsData.messages > 0 && (
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                )}
               </button>
               <button
                 onClick={() => navigate('/settings')}
