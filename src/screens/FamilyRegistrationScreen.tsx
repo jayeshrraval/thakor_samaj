@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Users, Plus, Trash2, MapPin, User, ChevronDown, Check, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Users, Plus, Trash2, MapPin, User, ChevronDown, Check, AlertCircle, ArrowLeft, Loader2 } from 'lucide-react';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../supabaseClient';
 
@@ -35,24 +35,19 @@ const genderOptions = [
   { value: 'સ્ત્રી', label: 'સ્ત્રી' },
 ];
 
-// ❌ golOptions હટાવી દીધું છે
-
 export default function FamilyRegistrationScreen() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
 
-  // Form state
   const [headName, setHeadName] = useState('');
   const [subSurname, setSubSurname] = useState('');
-  const [gol, setGol] = useState(''); // હવે આમાં યુઝર જે લખશે તે સ્ટોર થશે
+  const [gol, setGol] = useState('');
   const [village, setVillage] = useState('');
-  const [taluko, setTaluko] = useState('');
+  const [taluko, setTaluko] = useState(''); // તાલુકો
   const [district, setDistrict] = useState('');
-  const [currentResidence, setCurrentResidence] = useState('');
 
-  // Members state
   const [members, setMembers] = useState<FamilyMember[]>([
     { id: '1', memberName: '', relationship: '', gender: '' },
   ]);
@@ -80,10 +75,10 @@ export default function FamilyRegistrationScreen() {
     const newErrors: FormErrors = {};
     if (!headName.trim()) newErrors.headName = 'મોભીનું નામ જરૂરી છે';
     if (!subSurname.trim()) newErrors.subSurname = 'પેટા અટક જરૂરી છે';
-    if (!gol.trim()) newErrors.gol = 'ગોળ લખવું જરૂરી છે'; // ગોળ માટે વેલિડેશન
+    if (!gol.trim()) newErrors.gol = 'ગોળ લખવું જરૂરી છે';
 
-    const validMembers = members.filter((m) => m.memberName.trim() && m.relationship && m.gender);
-    if (validMembers.length === 0) newErrors.members = 'ઓછામાં ઓછો એક સભ્ય પૂરી માહિતી સાથે ઉમેરો';
+    const validMembersCount = members.filter((m) => m.memberName.trim() && m.relationship && m.gender).length;
+    if (validMembersCount === 0 && members[0].memberName !== "") newErrors.members = 'સભ્યોની માહિતી અધૂરી છે';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -91,13 +86,13 @@ export default function FamilyRegistrationScreen() {
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
-
     setIsSubmitting(true);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        alert('પ્લીઝ લોગીન કરો');
+        alert('કૃપા કરીને લોગીન કરો');
+        navigate('/');
         return;
       }
 
@@ -110,8 +105,10 @@ export default function FamilyRegistrationScreen() {
             sub_surname: subSurname,
             gol: gol,
             village: village,
+            taluko: taluko, // તાલુકો ઉમેર્યો
             district: district,
             total_members: members.length + 1,
+            user_id: user.id
           }
         ])
         .select()
@@ -119,36 +116,30 @@ export default function FamilyRegistrationScreen() {
 
       if (familyError) throw familyError;
 
-      const familyId = familyData.id;
-
-      // 2. Prepare Members Data
+      // 2. Prepare Members
       const validMembers = members
         .filter((m) => m.memberName.trim())
         .map((m) => ({
-          family_id: familyId,
+          family_id: familyData.id,
           member_name: m.memberName,
           relationship: m.relationship,
           gender: m.gender,
         }));
 
-      // 3. Insert Members Data
+      // 3. Insert Members
       if (validMembers.length > 0) {
-        const { error: memberError } = await supabase
-          .from('members')
-          .insert(validMembers);
-        
+        const { error: memberError } = await supabase.from('members').insert(validMembers);
         if (memberError) throw memberError;
       }
 
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
-        navigate('/family-list');
+        navigate('/family'); // App.tsx મુજબ /family પાથ પર મોકલો
       }, 2000);
 
     } catch (error: any) {
-      console.error('Error:', error);
-      alert('રજીસ્ટ્રેશનમાં ભૂલ છે: ' + error.message);
+      alert('ભૂલ: ' + (error.message || 'રજીસ્ટ્રેશન નિષ્ફળ રહ્યું'));
     } finally {
       setIsSubmitting(false);
     }
@@ -156,16 +147,12 @@ export default function FamilyRegistrationScreen() {
 
   const SelectDropdown = ({ value, options, onChange, placeholder, dropdownId }: any) => {
     const isOpen = openDropdown === dropdownId;
-    const optionList = typeof options[0] === 'string'
-      ? options.map((o: string) => ({ value: o, label: o }))
-      : options;
-
     return (
       <div className="relative">
         <button
           type="button"
-          onClick={() => setOpenDropdown(isOpen ? null : dropdownId)}
-          className="w-full px-4 py-3 border border-gray-200 rounded-2xl flex items-center justify-between bg-white focus:outline-none focus:ring-2 focus:ring-mint"
+          onClick={(e) => { e.stopPropagation(); setOpenDropdown(isOpen ? null : dropdownId); }}
+          className="w-full px-4 py-3 border border-gray-200 rounded-2xl flex items-center justify-between bg-white focus:ring-2 focus:ring-mint transition-all"
         >
           <span className={`font-gujarati ${value ? 'text-gray-800' : 'text-gray-400'}`}>
             {value || placeholder}
@@ -178,16 +165,14 @@ export default function FamilyRegistrationScreen() {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="absolute z-50 w-full mt-2 bg-white rounded-2xl shadow-elevated border border-gray-100 max-h-60 overflow-y-auto"
+              className="absolute z-[100] w-full mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 max-h-60 overflow-y-auto"
             >
-              {optionList.map((opt: any) => (
+              {options.map((opt: any) => (
                 <button
                   key={opt.value}
                   type="button"
                   onClick={() => { onChange(opt.value); setOpenDropdown(null); }}
-                  className={`w-full px-4 py-3 text-left font-gujarati hover:bg-mint/10 flex items-center justify-between ${
-                    value === opt.value ? 'bg-mint/10 text-deep-blue' : 'text-gray-700'
-                  }`}
+                  className="w-full px-4 py-3 text-left font-gujarati hover:bg-gray-50 flex items-center justify-between"
                 >
                   {opt.label}
                   {value === opt.value && <Check className="w-4 h-4 text-deep-blue" />}
@@ -201,7 +186,7 @@ export default function FamilyRegistrationScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24" onClick={() => setOpenDropdown(null)}>
+    <div className="min-h-screen bg-gray-50 pb-32" onClick={() => setOpenDropdown(null)}>
       {/* Header */}
       <div className="bg-gradient-to-r from-deep-blue to-[#1A8FA3] safe-area-top">
         <div className="px-6 py-6">
@@ -211,119 +196,77 @@ export default function FamilyRegistrationScreen() {
             </button>
             <div>
               <h1 className="text-white font-gujarati font-bold text-2xl">પરિવાર રજીસ્ટ્રેશન</h1>
-              <p className="text-white/80 text-sm font-gujarati">તમારા પરિવારની માહિતી નોંધો</p>
+              <p className="text-white/80 text-sm font-gujarati tracking-wide">નવી એન્ટ્રી ઉમેરો</p>
             </div>
           </div>
         </div>
       </div>
 
       <div className="px-6 py-6 space-y-6">
-        {/* Family Head Info */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="premium-card p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center space-x-2 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-deep-blue/10 flex items-center justify-center">
-              <User className="w-5 h-5 text-deep-blue" />
-            </div>
-            <h2 className="font-gujarati font-bold text-gray-800 text-lg">પરિવારની મુખ્ય માહિતી</h2>
+        {/* Step 1: Head Info */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="premium-card p-6 space-y-4">
+          <div className="flex items-center space-x-2 mb-2">
+            <User className="text-deep-blue w-5 h-5" />
+            <h2 className="font-gujarati font-bold text-gray-800">પરિવારની મુખ્ય માહિતી</h2>
           </div>
-
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm text-gray-600 font-gujarati mb-2">પરિવારના મોભીનું પૂરું નામ <span className="text-red-500">*</span></label>
-              <input type="text" value={headName} onChange={(e) => setHeadName(e.target.value)} placeholder="મોભીનું નામ લખો" className={`w-full px-4 py-3 border rounded-2xl focus:outline-none focus:ring-2 focus:ring-mint font-gujarati ${errors.headName ? 'border-red-400' : 'border-gray-200'}`} />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-600 font-gujarati mb-2">પેટા અટક <span className="text-red-500">*</span></label>
-              <input type="text" value={subSurname} onChange={(e) => setSubSurname(e.target.value)} placeholder="પેટા અટક લખો" className={`w-full px-4 py-3 border rounded-2xl focus:outline-none focus:ring-2 focus:ring-mint font-gujarati ${errors.subSurname ? 'border-red-400' : 'border-gray-200'}`} />
-            </div>
-            
-            {/* ✅ અહિયાં ફેરફાર કર્યો: Input Box મૂક્યું છે */}
-            <div>
-              <label className="block text-sm text-gray-600 font-gujarati mb-2">ગોળ <span className="text-red-500">*</span></label>
-              <input 
-                type="text" 
-                value={gol} 
-                onChange={(e) => setGol(e.target.value)} 
-                placeholder="ગોળ લખો (દા.ત. કાશ્યપ, ભારદ્વાજ)" 
-                className={`w-full px-4 py-3 border rounded-2xl focus:outline-none focus:ring-2 focus:ring-mint font-gujarati ${errors.gol ? 'border-red-400' : 'border-gray-200'}`} 
-              />
-              {errors.gol && (
-                <p className="text-red-500 text-sm mt-1 font-gujarati flex items-center">
-                  <AlertCircle className="w-4 h-4 mr-1" /> {errors.gol}
-                </p>
-              )}
-            </div>
+            <input type="text" value={headName} onChange={(e) => setHeadName(e.target.value)} placeholder="મોભીનું પૂરું નામ *" className="w-full px-4 py-3 border border-gray-200 rounded-2xl font-gujarati" />
+            <input type="text" value={subSurname} onChange={(e) => setSubSurname(e.target.value)} placeholder="પેટા અટક *" className="w-full px-4 py-3 border border-gray-200 rounded-2xl font-gujarati" />
+            <input type="text" value={gol} onChange={(e) => setGol(e.target.value)} placeholder="ગોળ (દા.ત. કાશ્યપ) *" className="w-full px-4 py-3 border border-gray-200 rounded-2xl font-gujarati" />
           </div>
         </motion.div>
 
-        {/* Family Members */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="premium-card p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center justify-between mb-4">
+        {/* Step 2: Members */}
+        <div className="premium-card p-6 space-y-4">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2">
-              <Users className="w-5 h-5 text-deep-blue" />
-              <h2 className="font-gujarati font-bold text-gray-800 text-lg">પરિવારના સભ્યો</h2>
+              <Users className="text-deep-blue w-5 h-5" />
+              <h2 className="font-gujarati font-bold text-gray-800">પરિવારના સભ્યો</h2>
             </div>
-            <span className="text-sm text-gray-500 font-gujarati">{members.length} સભ્ય</span>
           </div>
-
           <div className="space-y-4">
             {members.map((member, index) => (
-              <motion.div key={member.id} className="bg-gray-50 rounded-2xl p-4 space-y-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-deep-blue font-gujarati font-semibold">સભ્ય #{index + 1}</span>
-                  {members.length > 1 && (
-                    <button type="button" onClick={() => removeMember(member.id)} className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center hover:bg-red-200">
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </button>
-                  )}
+              <div key={member.id} className="bg-gray-50 p-4 rounded-2xl space-y-3 relative">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-tighter">સભ્ય #{index + 1}</span>
+                  {members.length > 1 && <button onClick={() => removeMember(member.id)}><Trash2 className="w-4 h-4 text-red-400" /></button>}
                 </div>
-                <input type="text" value={member.memberName} onChange={(e) => updateMember(member.id, 'memberName', e.target.value)} placeholder="સભ્યનું નામ" className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none bg-white font-gujarati" />
-                <div className="grid grid-cols-2 gap-3">
-                  <SelectDropdown value={member.relationship} options={relationshipOptions} onChange={(val: string) => updateMember(member.id, 'relationship', val)} placeholder="સંબંધ" dropdownId={`rel-${member.id}`} />
-                  <SelectDropdown value={member.gender} options={genderOptions} onChange={(val: string) => updateMember(member.id, 'gender', val)} placeholder="લિંગ" dropdownId={`gen-${member.id}`} />
+                <input type="text" value={member.memberName} onChange={(e) => updateMember(member.id, 'memberName', e.target.value)} placeholder="સભ્યનું નામ" className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl font-gujarati" />
+                <div className="grid grid-cols-2 gap-2">
+                  <SelectDropdown value={member.relationship} options={relationshipOptions} onChange={(v:any) => updateMember(member.id, 'relationship', v)} placeholder="સંબંધ" dropdownId={`rel-${member.id}`} />
+                  <SelectDropdown value={member.gender} options={genderOptions} onChange={(v:any) => updateMember(member.id, 'gender', v)} placeholder="લિંગ" dropdownId={`gen-${member.id}`} />
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
-          <button type="button" onClick={addMember} className="w-full py-3 border-2 border-dashed border-mint text-deep-blue rounded-2xl font-gujarati font-medium flex items-center justify-center space-x-2 hover:bg-mint/5">
-            <Plus className="w-5 h-5" /> <span>સભ્ય ઉમેરો +</span>
+          <button onClick={addMember} className="w-full py-3 border-2 border-dashed border-gray-200 rounded-2xl text-deep-blue font-gujarati flex items-center justify-center gap-2">
+            <Plus size={18} /> સભ્ય ઉમેરો
           </button>
-        </motion.div>
+        </div>
 
-        {/* Location Info */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="premium-card p-6 space-y-4">
-          <div className="flex items-center space-x-2 mb-4">
-            <MapPin className="w-5 h-5 text-royal-gold" />
-            <h2 className="font-gujarati font-bold text-gray-800 text-lg">સ્થળની માહિતી</h2>
+        {/* Step 3: Location */}
+        <div className="premium-card p-6 space-y-4">
+          <div className="flex items-center space-x-2">
+            <MapPin className="text-royal-gold w-5 h-5" />
+            <h2 className="font-gujarati font-bold text-gray-800">સ્થળની માહિતી</h2>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <input type="text" value={village} onChange={(e) => setVillage(e.target.value)} placeholder="ગામ" className="w-full px-4 py-3 border border-gray-200 rounded-2xl font-gujarati" />
-            <input type="text" value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="જિલ્લો" className="w-full px-4 py-3 border border-gray-200 rounded-2xl font-gujarati" />
+            <input type="text" value={taluko} onChange={(e) => setTaluko(e.target.value)} placeholder="તાલુકો" className="w-full px-4 py-3 border border-gray-200 rounded-2xl font-gujarati" />
+            <input type="text" value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="જિલ્લો" className="w-full px-4 py-3 border border-gray-200 rounded-2xl font-gujarati col-span-2" />
           </div>
-        </motion.div>
+        </div>
 
-        {/* Submit Button */}
-        <motion.button
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          onClick={handleSubmit}
-          disabled={isSubmitting}
-          className="w-full bg-gradient-to-r from-deep-blue to-[#1A8FA3] text-white font-gujarati font-bold py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all active:scale-98 disabled:opacity-70 flex items-center justify-center space-x-2"
-        >
-          {isSubmitting ? 'રજીસ્ટર થઈ રહ્યું છે...' : 'પરિવાર રજીસ્ટર કરો'}
-        </motion.button>
+        <button onClick={handleSubmit} disabled={isSubmitting} className="w-full bg-deep-blue text-white font-gujarati font-bold py-4 rounded-2xl shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95 transition-all">
+          {isSubmitting ? <Loader2 className="animate-spin" /> : 'માહિતી સેવ કરો'}
+        </button>
       </div>
 
-      {/* Success Toast */}
       <AnimatePresence>
         {showSuccess && (
-          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className="fixed bottom-32 left-6 right-6 bg-green-500 text-white px-6 py-4 rounded-2xl shadow-xl flex items-center space-x-3 z-50">
-            <Check className="w-6 h-6" />
-            <div>
-              <p className="font-gujarati font-semibold">સફળતા!</p>
-              <p className="text-sm font-gujarati opacity-90">પરિવાર સફળતાપૂર્વક રજીસ્ટર થયો</p>
-            </div>
+          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="fixed bottom-24 left-6 right-6 bg-green-500 text-white p-4 rounded-2xl shadow-2xl flex items-center gap-3 z-[200]">
+            <Check className="bg-white/20 p-1 rounded-full" />
+            <p className="font-gujarati">પરિવાર સફળતાપૂર્વક રજીસ્ટર થયો!</p>
           </motion.div>
         )}
       </AnimatePresence>
