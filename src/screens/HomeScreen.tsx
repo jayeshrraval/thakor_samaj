@@ -102,7 +102,7 @@ export default function HomeScreen() {
               </div>
               <div>
                 <h1 className="text-white font-gujarati font-bold text-lg">
-                  {loading ? 'Welcome...' : `જય સ્વામિનારાયણ, ${userName}`}
+                  {loading ? 'Welcome...' : `Welcome, ${userName}`}
                 </h1>
                 <p className="text-mint text-xs">Community Connection</p>
               </div>
