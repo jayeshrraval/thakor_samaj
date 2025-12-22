@@ -35,11 +35,14 @@ import TrustScreen from './screens/TrustScreen';
 // --- 6. Emergency Aid (નવું ઉમેર્યું) ---
 import AccidentalAidScreen from './screens/AccidentalAidScreen';
 
-// --- 7. Premium & AI ---
+// --- 7. Job & Career (NEW ADDITION) ---
+import JobPostScreen from './screens/JobPostScreen';
+
+// --- 8. Premium & AI ---
 import SubscriptionScreen from './screens/SubscriptionScreen';
 import AIAssistantScreen from './screens/AIAssistantScreen';
 
-// --- 8. Settings & Profile ---
+// --- 9. Settings & Profile ---
 import ProfileScreen from './screens/ProfileScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import AboutScreen from './screens/AboutScreen'; 
@@ -116,6 +119,9 @@ export default function App() {
         <Route path="/scholarship" element={<ProtectedRoute><ScholarshipScreen /></ProtectedRoute>} />
         <Route path="/achievers" element={<ProtectedRoute><AchieversScreen /></ProtectedRoute>} />
         <Route path="/daily-guidance" element={<ProtectedRoute><DailyGuidanceScreen /></ProtectedRoute>} />
+
+        {/* --- Job & Career Module (NEW ROUTE) --- */}
+        <Route path="/jobs" element={<ProtectedRoute><JobPostScreen /></ProtectedRoute>} />
 
         {/* --- Social, Trust & Aid --- */}
         <Route path="/trust" element={<ProtectedRoute><TrustScreen /></ProtectedRoute>} />

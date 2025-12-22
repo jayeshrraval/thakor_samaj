@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { 
   Bell, Settings, Heart, Search, MessageCircle, User, CreditCard, 
-  Building2, Bot, Users, GraduationCap, AlertTriangle 
-} from 'lucide-react'; // AlertTriangle ઉમેર્યું
+  Building2, Bot, Users, GraduationCap, AlertTriangle, Briefcase 
+} from 'lucide-react'; // Briefcase icon added here
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import BottomNav from '../components/BottomNav'; // પાથ ચેક કરી લેજો
+import BottomNav from '../components/BottomNav';
 import { supabase } from '../supabaseClient'; 
 
 export default function HomeScreen() {
@@ -13,7 +13,6 @@ export default function HomeScreen() {
   const [userName, setUserName] = useState('Guest User');
   const [loading, setLoading] = useState(true);
   
-  // આંકડા માટે સ્ટેટ
   const [statsData, setStatsData] = useState({
     profiles: 0,
     interests: 0,
@@ -26,11 +25,8 @@ export default function HomeScreen() {
 
   const fetchDashboardData = async () => {
     try {
-      // 1. Get Current User
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (user) {
-        // Fetch User Details
         const { data: userProfile } = await supabase
           .from('users')
           .select('full_name')
@@ -43,20 +39,9 @@ export default function HomeScreen() {
             setUserName(user.user_metadata?.full_name || 'Yogi Member');
         }
 
-        // 2. Fetch Stats counts (Real Data)
-        const { count: profileCount } = await supabase
-          .from('matrimony_profiles')
-          .select('*', { count: 'exact', head: true });
-
-        const { count: interestCount } = await supabase
-          .from('requests')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id); 
-
-        const { count: messageCount } = await supabase
-            .from('messages')
-            .select('*', { count: 'exact', head: true })
-            .eq('is_read', false); 
+        const { count: profileCount } = await supabase.from('matrimony_profiles').select('*', { count: 'exact', head: true });
+        const { count: interestCount } = await supabase.from('requests').select('*', { count: 'exact', head: true }).eq('user_id', user.id); 
+        const { count: messageCount } = await supabase.from('messages').select('*', { count: 'exact', head: true }).eq('is_read', false); 
 
         setStatsData({
             profiles: profileCount || 0,
@@ -76,6 +61,10 @@ export default function HomeScreen() {
     { icon: Search, title: 'પાર્ટનર શોધો', color: 'from-mint to-teal-500', path: '/matrimony' },
     { icon: Users, title: 'પરિવાર રજીસ્ટ્રેશન', color: 'from-deep-blue to-cyan-500', path: '/family-list' },
     { icon: GraduationCap, title: 'શિક્ષણ અને ભવિષ્ય', color: 'from-indigo-400 to-purple-500', path: '/education' },
+    
+    // --- NEW JOB CARD ADDED HERE ---
+    { icon: Briefcase, title: 'નોકરીની જાહેરાત', color: 'from-blue-600 to-indigo-600', path: '/jobs' },
+    
     { icon: MessageCircle, title: 'યોગીગ્રામ', color: 'from-purple-400 to-indigo-500', path: '/yogigram' },
     { icon: MessageCircle, title: 'મેસેજ', color: 'from-blue-400 to-cyan-500', path: '/messages' },
     { icon: User, title: 'મારી પ્રોફાઈલ', color: 'from-amber-400 to-orange-500', path: '/profile' },
@@ -101,26 +90,18 @@ export default function HomeScreen() {
                 <User className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-white font-gujarati font-bold text-lg">
+                <h1 className="text-white font-bold text-lg">
                   {loading ? 'Welcome...' : `Welcome, ${userName}`}
                 </h1>
                 <p className="text-mint text-xs">Community Connection</p>
               </div>
             </div>
             <div className="flex space-x-3">
-              <button
-                onClick={() => navigate('/notifications')}
-                className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center relative"
-              >
+              <button onClick={() => navigate('/notifications')} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center relative">
                 <Bell className="w-5 h-5 text-white" />
-                {statsData.messages > 0 && (
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                )}
+                {statsData.messages > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>}
               </button>
-              <button
-                onClick={() => navigate('/settings')}
-                className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center"
-              >
+              <button onClick={() => navigate('/settings')} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
                 <Settings className="w-5 h-5 text-white" />
               </button>
             </div>
@@ -132,16 +113,14 @@ export default function HomeScreen() {
       <div className="px-6 py-6">
         <div className="grid grid-cols-2 gap-4">
           
-          {/* --- NEW EMERGENCY CARD (FULL WIDTH) --- */}
+          {/* EMERGENCY CARD */}
           <motion.div 
              initial={{ opacity: 0, scale: 0.95 }}
              animate={{ opacity: 1, scale: 1 }}
              onClick={() => navigate('/accidental-aid')}
              className="col-span-2 bg-white p-4 rounded-2xl shadow-md border-l-4 border-red-500 flex items-center justify-between relative overflow-hidden active:scale-95 transition-all"
           >
-            {/* Red Glow Background Effect */}
             <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
-            
             <div className="flex items-center space-x-4 z-10">
               <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center border border-red-100 shrink-0 animate-pulse">
                 <AlertTriangle className="w-6 h-6 text-red-600" />
@@ -151,13 +130,12 @@ export default function HomeScreen() {
                 <p className="text-xs text-red-500 font-gujarati font-medium">તાત્કાલિક મદદ માટે અહીં ક્લિક કરો</p>
               </div>
             </div>
-            
             <div className="bg-red-50 px-3 py-1 rounded-full border border-red-100">
                <span className="text-red-600 text-xs font-bold">SOS</span>
             </div>
           </motion.div>
-          {/* --------------------------------------- */}
 
+          {/* Cards Loop */}
           {featureCards.map((card, index) => {
             const Icon = card.icon;
             return (
@@ -181,14 +159,8 @@ export default function HomeScreen() {
         </div>
       </div>
 
-      {/* Stats Ribbon */}
       <div className="px-6 pb-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="premium-card p-6"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="premium-card p-6">
           <div className="flex items-center justify-around">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
@@ -199,7 +171,6 @@ export default function HomeScreen() {
           </div>
         </motion.div>
       </div>
-
       <BottomNav />
     </div>
   );
