@@ -31,11 +31,12 @@ import DailyGuidanceScreen from './screens/DailyGuidanceScreen';
 
 // --- 5. Social & Trust ---
 import TrustScreen from './screens/TrustScreen';
+import SamuhLagnaForm from './screens/SamuhLagnaForm'; // <--- NEW: આ આપણે ઉમેર્યું
 
-// --- 6. Emergency Aid (નવું ઉમેર્યું) ---
+// --- 6. Emergency Aid ---
 import AccidentalAidScreen from './screens/AccidentalAidScreen';
 
-// --- 7. Job & Career (NEW ADDITION) ---
+// --- 7. Job & Career ---
 import JobPostScreen from './screens/JobPostScreen';
 
 // --- 8. Premium & AI ---
@@ -75,7 +76,7 @@ export default function App() {
     };
   }, []);
 
-  // --- જ્યારે એપ લોડ થાય અથવા ૩ સેકન્ડ પૂરી ન થઈ હોય ત્યારે તારી સ્ક્રીન બતાવો ---
+  // --- સ્પલેશ સ્ક્રીન ---
   if (showSplash || loading) {
     return <SplashScreen />;
   }
@@ -120,11 +121,14 @@ export default function App() {
         <Route path="/achievers" element={<ProtectedRoute><AchieversScreen /></ProtectedRoute>} />
         <Route path="/daily-guidance" element={<ProtectedRoute><DailyGuidanceScreen /></ProtectedRoute>} />
 
-        {/* --- Job & Career Module (NEW ROUTE) --- */}
+        {/* --- Job & Career Module --- */}
         <Route path="/jobs" element={<ProtectedRoute><JobPostScreen /></ProtectedRoute>} />
 
         {/* --- Social, Trust & Aid --- */}
         <Route path="/trust" element={<ProtectedRoute><TrustScreen /></ProtectedRoute>} />
+        {/* NEW: આ લાઈન ઉમેરી એટલે બટન કામ કરશે */}
+        <Route path="/samuh-lagna-form" element={<ProtectedRoute><SamuhLagnaForm /></ProtectedRoute>} /> 
+        
         <Route path="/accidental-aid" element={<ProtectedRoute><AccidentalAidScreen /></ProtectedRoute>} />
 
         {/* --- Premium & AI --- */}
