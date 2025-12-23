@@ -2,51 +2,47 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 
-// --- તારી નવી પ્રીમિયમ સ્પલેશ સ્ક્રીન ---
+// --- Auth & Main ---
 import SplashScreen from './screens/SplashScreen';
-
-// --- 1. Auth & Main ---
 import LoginScreen from "./screens/LoginScreen";
 import HomeScreen from './screens/HomeScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 
-// --- 2. Family Module ---
+// --- Family Module ---
 import FamilyListScreen from './screens/FamilyListScreen';
 import FamilyDetailScreen from './screens/FamilyDetailScreen';
 import FamilyRegistrationScreen from './screens/FamilyRegistrationScreen';
 
-// --- 3. Matrimony & Chat ---
+// --- Matrimony & Chat ---
 import MatrimonyScreen from './screens/MatrimonyScreen';
 import RequestsScreen from './screens/RequestsScreen'; 
 import PrivateChatScreen from './screens/PrivateChatScreen';
 import GeneralChatScreen from './screens/GeneralChatScreen';
 
-// --- 4. Education Hub ---
+// --- Education Hub ---
 import EducationHubScreen from './screens/EducationHubScreen';
 import StudentProfileScreen from './screens/StudentProfileScreen';
 import ScholarshipScreen from './screens/ScholarshipScreen';
 import AchieversScreen from './screens/AchieversScreen';
 import DailyGuidanceScreen from './screens/DailyGuidanceScreen';
 
-// --- 5. Social & Trust ---
+// --- Social & Trust ---
 import TrustScreen from './screens/TrustScreen';
 import SamuhLagnaForm from './screens/SamuhLagnaForm'; 
 
-// --- 6. Emergency Aid ---
+// --- Emergency Aid ---
 import AccidentalAidScreen from './screens/AccidentalAidScreen';
 
-// --- 7. Job & Career ---
+// --- Job & Career ---
 import JobPostScreen from './screens/JobPostScreen';
 
-// --- 8. Premium & AI ---
+// --- Premium & AI ---
 import SubscriptionScreen from './screens/SubscriptionScreen';
 import AIAssistantScreen from './screens/AIAssistantScreen';
+import KrishnaChatScreen from './screens/KrishnaChatScreen';
 
-// --- NEW: KRISHNA CHAT IMPORT ---
-import KrishnaChatScreen from './screens/KrishnaChatScreen'; // <--- આ ઉમેર્યું
-
-// --- 9. Settings & Profile ---
+// --- Settings & Profile ---
 import ProfileScreen from './screens/ProfileScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import AboutScreen from './screens/AboutScreen'; 
@@ -57,17 +53,17 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
-    // 1. એપ શરૂ થાય ત્યારે સેશન ચેક કરો
+    // સેશન ચેક કરો
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });
 
-    // 2. લોગીન/લોગઆઉટ સ્ટેટ મેન્ટેન કરો
+    // ઓથ સ્ટેટ ચેન્જ હેન્ડલર
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
 
-    // 3. ફરજિયાત ૩ સેકન્ડનો સ્પલેશ ટાઈમર
+    // સ્પલેશ સ્ક્રીન ટાઈમર
     const timer = setTimeout(() => {
       setShowSplash(false);
       setLoading(false);
@@ -79,12 +75,11 @@ export default function App() {
     };
   }, []);
 
-  // --- સ્પલેશ સ્ક્રીન ---
   if (showSplash || loading) {
     return <SplashScreen />;
   }
 
-  // --- Protected Route Wrapper ---
+  // Protected Route Wrapper
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     if (!session) {
       return <Navigate to="/" replace />;
@@ -102,14 +97,14 @@ export default function App() {
         />
         <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
 
-        {/* --- Main Routes (Protected) --- */}
+        {/* --- Main Routes --- */}
         <Route path="/home" element={<ProtectedRoute><HomeScreen /></ProtectedRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><NotificationsScreen /></ProtectedRoute>} />
 
-        {/* --- Family Module --- */}
-        <Route path="/family" element={<ProtectedRoute><FamilyListScreen /></ProtectedRoute>} />
-        <Route path="/family-detail/:id" element={<ProtectedRoute><FamilyDetailScreen /></ProtectedRoute>} />
-        <Route path="/family-register" element={<ProtectedRoute><FamilyRegistrationScreen /></ProtectedRoute>} />
+        {/* --- Family Module (FIXED ROUTES) --- */}
+        <Route path="/family-list" element={<ProtectedRoute><FamilyListScreen /></ProtectedRoute>} />
+        <Route path="/family-details/:id" element={<ProtectedRoute><FamilyDetailScreen /></ProtectedRoute>} />
+        <Route path="/family-registration" element={<ProtectedRoute><FamilyRegistrationScreen /></ProtectedRoute>} />
 
         {/* --- Matrimony & Chat --- */}
         <Route path="/matrimony" element={<ProtectedRoute><MatrimonyScreen /></ProtectedRoute>} />
@@ -124,10 +119,10 @@ export default function App() {
         <Route path="/achievers" element={<ProtectedRoute><AchieversScreen /></ProtectedRoute>} />
         <Route path="/daily-guidance" element={<ProtectedRoute><DailyGuidanceScreen /></ProtectedRoute>} />
 
-        {/* --- Job & Career Module --- */}
+        {/* --- Job & Career --- */}
         <Route path="/jobs" element={<ProtectedRoute><JobPostScreen /></ProtectedRoute>} />
 
-        {/* --- Social, Trust & Aid --- */}
+        {/* --- Social & Emergency --- */}
         <Route path="/trust" element={<ProtectedRoute><TrustScreen /></ProtectedRoute>} />
         <Route path="/samuh-lagna-form" element={<ProtectedRoute><SamuhLagnaForm /></ProtectedRoute>} /> 
         <Route path="/accidental-aid" element={<ProtectedRoute><AccidentalAidScreen /></ProtectedRoute>} />
@@ -135,8 +130,6 @@ export default function App() {
         {/* --- Premium & AI --- */}
         <Route path="/subscription" element={<ProtectedRoute><SubscriptionScreen /></ProtectedRoute>} />
         <Route path="/ai-assistant" element={<ProtectedRoute><AIAssistantScreen /></ProtectedRoute>} />
-        
-        {/* --- NEW: KRISHNA CHAT ROUTE --- */}
         <Route path="/krishna-chat" element={<ProtectedRoute><KrishnaChatScreen /></ProtectedRoute>} /> 
 
         {/* --- Profile & Settings --- */}
@@ -144,7 +137,7 @@ export default function App() {
         <Route path="/settings" element={<ProtectedRoute><SettingsScreen /></ProtectedRoute>} />
         <Route path="/about" element={<ProtectedRoute><AboutScreen /></ProtectedRoute>} />
 
-        {/* --- 404 Not Found --- */}
+        {/* --- 404 Catch-all --- */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
