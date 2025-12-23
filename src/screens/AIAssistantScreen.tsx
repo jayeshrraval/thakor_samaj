@@ -10,7 +10,7 @@ export default function AIAssistantScreen() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // ✅ Netlify/Local .env માંથી API Key લેશે
+  // ✅ Netlify ના Environment variables માંથી કી લેશે
   const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
   interface Message {
@@ -35,42 +35,44 @@ export default function AIAssistantScreen() {
     scrollToBottom();
   }, [messages]);
 
-  // 🤖 Multi-Model Fallback Logic (Error-Proof)
+  // 🤖 Gemini 1.5 Flash API Call (Stable v1 Endpoint)
   const callGeminiAI = async (userText: string) => {
-    if (!GEMINI_API_KEY) return "ભૂલ: API Key સેટ કરેલી નથી.";
-
-    const prompt = `You are a helpful Gujarati assistant for a community app. Always answer in Gujarati. Question: ${userText}`;
-    
-    // ✅ આપણે વારાફરતી આ બંને મોડેલ્સ ટ્રાય કરીશું (Fallback Mechanism)
-    const models = ["gemini-1.5-flash", "gemini-pro"];
-
-    for (const modelName of models) {
-      try {
-        console.log(`Trying model: ${modelName}...`);
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-            }),
-          }
-        );
-
-        const data = await response.json();
-        
-        // જો સફળતાપૂર્વક જવાબ મળે, તો અહીંથી જ રિટર્ન થઈ જાવ
-        if (data.candidates && data.candidates[0].content) {
-          return data.candidates[0].content.parts[0].text;
-        }
-      } catch (err) {
-        console.warn(`${modelName} failed, moving to next...`);
-        // લૂપ ચાલુ રહેશે અને લિસ્ટમાં રહેલા બીજા મોડેલને ટ્રાય કરશે
-      }
+    if (!GEMINI_API_KEY) {
+      console.error("API Key Missing!");
+      return "ભૂલ: API Key સેટ કરેલી નથી. મહેરબાની કરીને Netlify સેટિંગ્સ ચેક કરો.";
     }
 
-    return "માફ કરશો, અત્યારે સર્વર કનેક્શનમાં સમસ્યા છે. કૃપા કરીને થોડી વાર પછી પ્રયત્ન કરો.";
+    try {
+      const prompt = `You are a helpful Gujarati assistant for a community app. Always answer in Gujarati. Question: ${userText}`;
+
+      // ✅ 404 એરર સોલ્વ કરવા માટે v1beta ની જગ્યાએ v1 પાથ વાપર્યો છે
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+          }),
+        }
+      );
+
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error.message);
+      }
+
+      if (data.candidates && data.candidates[0].content) {
+        return data.candidates[0].content.parts[0].text;
+      }
+
+      return "ક્ષમા કરશો, અત્યારે હું આનો જવાબ આપી શકતો નથી.";
+
+    } catch (error: any) {
+      console.error("Gemini Error:", error);
+      return "નેટવર્ક સમસ્યા! મહેરબાની કરીને તમારી API Key અને ઇન્ટરનેટ ચેક કરો.";
+    }
   };
 
   const handleSend = async () => {
@@ -122,7 +124,7 @@ export default function AIAssistantScreen() {
           >
             <div className={`flex items-end space-x-2 max-w-[85%] ${msg.type === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mb-1 shadow-sm ${
-                msg.type === 'user' ? 'bg-deep-blue' : 'bg-gradient-to-br from-violet-500 to-purple-600'
+                msg.type === 'user' ? 'bg-[#1a237e]' : 'bg-gradient-to-br from-violet-500 to-purple-600'
               }`}>
                 {msg.type === 'user' ? <User className="w-4 h-4 text-white" /> : <Bot className="w-4 h-4 text-white" />}
               </div>
@@ -163,7 +165,7 @@ export default function AIAssistantScreen() {
           <button 
             onClick={handleSend}
             disabled={loading || !input.trim()}
-            className="p-2 bg-violet-600 rounded-full text-white disabled:opacity-50 active:scale-90 transition-transform shadow-md"
+            className="p-2 bg-violet-600 rounded-full text-white disabled:opacity-50 active:scale-90 transition-transform"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 ml-0.5" />}
           </button>
