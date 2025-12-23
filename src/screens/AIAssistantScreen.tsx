@@ -35,44 +35,42 @@ export default function AIAssistantScreen() {
     scrollToBottom();
   }, [messages]);
 
-  // 🤖 Gemini 1.5 Flash API Call (Stable Version)
+  // 🤖 Multi-Model Fallback Logic (Error-Proof)
   const callGeminiAI = async (userText: string) => {
-    if (!GEMINI_API_KEY) {
-      console.error("API Key Missing!");
-      return "ભૂલ: API Key સેટ કરેલી નથી. મહેરબાની કરીને Netlify ડેશબોર્ડ ચેક કરો.";
-    }
+    if (!GEMINI_API_KEY) return "ભૂલ: API Key સેટ કરેલી નથી.";
 
-    try {
-      const prompt = `You are a helpful Gujarati assistant for a community app. Always answer in Gujarati. Question: ${userText}`;
+    const prompt = `You are a helpful Gujarati assistant for a community app. Always answer in Gujarati. Question: ${userText}`;
+    
+    // ✅ આપણે વારાફરતી આ બંને મોડેલ્સ ટ્રાય કરીશું (Fallback Mechanism)
+    const models = ["gemini-1.5-flash", "gemini-pro"];
 
-      // ✅ Flash મોડેલ માટે 'v1' એન્ડપોઈન્ટ સૌથી સ્ટેબલ છે
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-          }),
+    for (const modelName of models) {
+      try {
+        console.log(`Trying model: ${modelName}...`);
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+            }),
+          }
+        );
+
+        const data = await response.json();
+        
+        // જો સફળતાપૂર્વક જવાબ મળે, તો અહીંથી જ રિટર્ન થઈ જાવ
+        if (data.candidates && data.candidates[0].content) {
+          return data.candidates[0].content.parts[0].text;
         }
-      );
-
-      const data = await response.json();
-      
-      if (data.error) {
-        throw new Error(data.error.message);
+      } catch (err) {
+        console.warn(`${modelName} failed, moving to next...`);
+        // લૂપ ચાલુ રહેશે અને લિસ્ટમાં રહેલા બીજા મોડેલને ટ્રાય કરશે
       }
-
-      if (data.candidates && data.candidates[0].content) {
-        return data.candidates[0].content.parts[0].text;
-      }
-
-      return "ક્ષમા કરશો, અત્યારે હું આ પ્રશ્નનો જવાબ આપી શકતો નથી.";
-
-    } catch (error: any) {
-      console.error("Gemini Error:", error);
-      return `નેટવર્ક સમસ્યા! (Error: ${error.message})`;
     }
+
+    return "માફ કરશો, અત્યારે સર્વર કનેક્શનમાં સમસ્યા છે. કૃપા કરીને થોડી વાર પછી પ્રયત્ન કરો.";
   };
 
   const handleSend = async () => {
@@ -165,7 +163,7 @@ export default function AIAssistantScreen() {
           <button 
             onClick={handleSend}
             disabled={loading || !input.trim()}
-            className="p-2 bg-violet-600 rounded-full text-white disabled:opacity-50 active:scale-90 transition-transform"
+            className="p-2 bg-violet-600 rounded-full text-white disabled:opacity-50 active:scale-90 transition-transform shadow-md"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 ml-0.5" />}
           </button>
