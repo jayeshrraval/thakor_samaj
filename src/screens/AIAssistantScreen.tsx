@@ -10,7 +10,7 @@ export default function AIAssistantScreen() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // ✅ .env ફાઈલમાંથી API Key લેશે (VITE_ પ્રીફિક્સ હોવો જોઈએ)
+  // ✅ .env માંથી API Key લેશે
   const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
   interface Message {
@@ -35,19 +35,19 @@ export default function AIAssistantScreen() {
     scrollToBottom();
   }, [messages]);
 
-  // 🤖 Gemini API Call Function (With System Instruction)
+  // 🤖 Gemini API Call Function (v1 End-point with Error Handling)
   const callGeminiAI = async (userText: string) => {
     if (!GEMINI_API_KEY) {
       console.error("API Key Missing!");
-      return "ભૂલ: API Key સેટ કરેલી નથી. કૃપા કરીને .env ફાઈલ ચેક કરો.";
+      return "ભૂલ: API Key સેટ કરેલી નથી. કૃપા કરીને Netlify સેટિંગ્સ ચેક કરો.";
     }
 
     try {
-      // AI ને ગુજરાતીમાં જવાબ આપવા માટે ફોર્સ કરો
       const prompt = `You are a helpful Gujarati assistant for a community app. Always answer in Gujarati. Question: ${userText}`;
 
+      // ✅ 404 Error ફિક્સ કરવા માટે v1beta ની જગ્યાએ v1 વાપર્યું છે
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -63,16 +63,20 @@ export default function AIAssistantScreen() {
         throw new Error(data.error.message);
       }
 
+      if (!data.candidates || !data.candidates[0].content) {
+        return "ક્ષમા કરશો, અત્યારે હું આનો જવાબ આપી શકતો નથી.";
+      }
+
       return data.candidates[0].content.parts[0].text;
 
     } catch (error: any) {
       console.error("Gemini Error:", error);
-      return "માફ કરશો, અત્યારે સર્વર કનેક્શનમાં સમસ્યા છે. કૃપા કરીને થોડી વાર પછી પ્રયત્ન કરો.";
+      return "નેટવર્ક સમસ્યા! કૃપા કરીને થોડી વાર પછી પ્રયત્ન કરો.";
     }
   };
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || loading) return;
 
     const userMessage = input;
     setInput('');
