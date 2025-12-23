@@ -10,7 +10,7 @@ export default function AIAssistantScreen() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // ✅ Netlify ના Environment variables માંથી કી લેશે
+  // ✅ Netlify માંથી API Key લેશે
   const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
   interface Message {
@@ -35,19 +35,18 @@ export default function AIAssistantScreen() {
     scrollToBottom();
   }, [messages]);
 
-  // 🤖 Gemini 1.5 Flash API Call (Stable v1 Endpoint)
+  // 🤖 Gemini API Call (Using Stable gemini-pro model)
   const callGeminiAI = async (userText: string) => {
     if (!GEMINI_API_KEY) {
-      console.error("API Key Missing!");
       return "ભૂલ: API Key સેટ કરેલી નથી. મહેરબાની કરીને Netlify સેટિંગ્સ ચેક કરો.";
     }
 
     try {
       const prompt = `You are a helpful Gujarati assistant for a community app. Always answer in Gujarati. Question: ${userText}`;
 
-      // ✅ 404 એરર સોલ્વ કરવા માટે v1beta ની જગ્યાએ v1 પાથ વાપર્યો છે
+      // ✅ 404 Error ફિક્સ કરવા માટે v1beta/gemini-pro નો ઉપયોગ કર્યો છે
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -71,7 +70,7 @@ export default function AIAssistantScreen() {
 
     } catch (error: any) {
       console.error("Gemini Error:", error);
-      return "નેટવર્ક સમસ્યા! મહેરબાની કરીને તમારી API Key અને ઇન્ટરનેટ ચેક કરો.";
+      return "નેટવર્ક સમસ્યા! મહેરબાની કરીને થોડી વાર પછી પ્રયત્ન કરો.";
     }
   };
 
