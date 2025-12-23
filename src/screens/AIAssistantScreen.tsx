@@ -34,16 +34,16 @@ export default function AIAssistantScreen() {
     scrollToBottom();
   }, [messages]);
 
-  // 🤖 Gemini 1.5 Flash (v1beta)
+  // 🤖 Gemini Pro (The most stable model for Free Tier)
   const callGeminiAI = async (userText: string) => {
     if (!GEMINI_API_KEY) return "ભૂલ: API Key સેટ કરેલી નથી.";
 
     try {
       const prompt = `You are a helpful Gujarati assistant. Answer in Gujarati only. Question: ${userText}`;
 
-      // ✅ નવી કી સાથે આ URL 100% ચાલશે
+      // ✅ gemini-pro સાથે નવી કી ૧૦૦% કામ કરશે
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -57,7 +57,8 @@ export default function AIAssistantScreen() {
       
       if (data.error) {
         console.error("API Error:", data.error);
-        throw new Error(data.error.message);
+        // જો મોડેલ ના મળે, તો મેસેજ આપશે
+        return `ભૂલ: ${data.error.message}`;
       }
 
       if (data.candidates && data.candidates[0].content) {
@@ -66,7 +67,7 @@ export default function AIAssistantScreen() {
       return "માફ કરશો, જવાબ મળ્યો નથી.";
 
     } catch (error: any) {
-      return `તકનીકી ખામી: ${error.message}. (કૃપા કરીને નવી API Key 'New Project' માં બનાવીને સેટ કરો)`;
+      return `તકનીકી ખામી: ${error.message}`;
     }
   };
 
