@@ -10,7 +10,7 @@ export default function AIAssistantScreen() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // ✅ .env માંથી API Key લેશે
+  // ✅ Netlify/Local .env માંથી API Key લેશે
   const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
   interface Message {
@@ -35,17 +35,17 @@ export default function AIAssistantScreen() {
     scrollToBottom();
   }, [messages]);
 
-  // 🤖 Gemini API Call Function (v1 End-point with Error Handling)
+  // 🤖 Gemini 1.5 Flash API Call (Stable Version)
   const callGeminiAI = async (userText: string) => {
     if (!GEMINI_API_KEY) {
       console.error("API Key Missing!");
-      return "ભૂલ: API Key સેટ કરેલી નથી. કૃપા કરીને Netlify સેટિંગ્સ ચેક કરો.";
+      return "ભૂલ: API Key સેટ કરેલી નથી. મહેરબાની કરીને Netlify ડેશબોર્ડ ચેક કરો.";
     }
 
     try {
       const prompt = `You are a helpful Gujarati assistant for a community app. Always answer in Gujarati. Question: ${userText}`;
 
-      // ✅ 404 Error ફિક્સ કરવા માટે v1beta ની જગ્યાએ v1 વાપર્યું છે
+      // ✅ Flash મોડેલ માટે 'v1' એન્ડપોઈન્ટ સૌથી સ્ટેબલ છે
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
         {
@@ -63,15 +63,15 @@ export default function AIAssistantScreen() {
         throw new Error(data.error.message);
       }
 
-      if (!data.candidates || !data.candidates[0].content) {
-        return "ક્ષમા કરશો, અત્યારે હું આનો જવાબ આપી શકતો નથી.";
+      if (data.candidates && data.candidates[0].content) {
+        return data.candidates[0].content.parts[0].text;
       }
 
-      return data.candidates[0].content.parts[0].text;
+      return "ક્ષમા કરશો, અત્યારે હું આ પ્રશ્નનો જવાબ આપી શકતો નથી.";
 
     } catch (error: any) {
       console.error("Gemini Error:", error);
-      return "નેટવર્ક સમસ્યા! કૃપા કરીને થોડી વાર પછી પ્રયત્ન કરો.";
+      return `નેટવર્ક સમસ્યા! (Error: ${error.message})`;
     }
   };
 
@@ -93,7 +93,7 @@ export default function AIAssistantScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col pb-24">
+    <div className="min-h-screen bg-gray-50 flex flex-col pb-24 font-gujarati">
       {/* Header */}
       <div className="bg-gradient-to-r from-violet-600 to-purple-600 safe-area-top px-4 py-4 shadow-md z-10">
         <div className="flex items-center space-x-3">
@@ -104,7 +104,7 @@ export default function AIAssistantScreen() {
             <Bot className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-white font-gujarati font-bold text-lg">જ્ઞાન સહાયક</h1>
+            <h1 className="text-white font-bold text-lg">જ્ઞાન સહાયક</h1>
             <p className="text-violet-100 text-xs flex items-center">
               <span className="w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></span>
               Online • AI Assistant
@@ -128,7 +128,7 @@ export default function AIAssistantScreen() {
               }`}>
                 {msg.type === 'user' ? <User className="w-4 h-4 text-white" /> : <Bot className="w-4 h-4 text-white" />}
               </div>
-              <div className={`px-4 py-3 shadow-md text-sm font-gujarati leading-relaxed whitespace-pre-wrap ${
+              <div className={`px-4 py-3 shadow-md text-sm leading-relaxed whitespace-pre-wrap ${
                 msg.type === 'user' ? 'bg-[#dcf8c6] text-gray-800 rounded-2xl rounded-br-none' : 'bg-white text-gray-800 rounded-2xl rounded-bl-none'
               }`}>
                 {msg.message}
@@ -160,7 +160,7 @@ export default function AIAssistantScreen() {
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             placeholder="તમારો પ્રશ્ન પૂછો..."
             disabled={loading}
-            className="flex-1 bg-transparent focus:outline-none font-gujarati text-gray-700"
+            className="flex-1 bg-transparent focus:outline-none text-gray-700"
           />
           <button 
             onClick={handleSend}
