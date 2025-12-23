@@ -12,24 +12,17 @@ interface FamilyMember {
   gender: string;
 }
 
-// ✅ અપડેટ કરેલા સંબંધોના ઓપ્શન્સ
 const relationshipOptions = [
-  { value: 'પત્ની', label: 'પત્ની' }, 
-  { value: 'પુત્ર', label: 'પુત્ર' },
-  { value: 'પુત્રી', label: 'પુત્રી' }, 
-  { value: 'પુત્રવધૂ', label: 'પુત્રવધૂ' }, // નવું
-  { value: 'પૌત્ર', label: 'પૌત્ર' },     // નવું
-  { value: 'પૌત્રી', label: 'પૌત્રી' },   // નવું
-  { value: 'પિતા', label: 'પિતા' }, 
-  { value: 'માતા', label: 'માતા' }, 
-  { value: 'ભાઈ', label: 'ભાઈ' },
-  { value: 'બહેન', label: 'બહેન' }, 
+  { value: 'પત્ની', label: 'પત્ની' }, { value: 'પુત્ર', label: 'પુત્ર' },
+  { value: 'પુત્રી', label: 'પુત્રી' }, { value: 'પુત્રવધૂ', label: 'પુત્રવધૂ' },
+  { value: 'પૌત્ર', label: 'પૌત્ર' }, { value: 'પૌત્રી', label: 'પૌત્રી' },
+  { value: 'પિતા', label: 'પિતા' }, { value: 'માતા', label: 'માતા' },
+  { value: 'ભાઈ', label: 'ભાઈ' }, { value: 'બહેન', label: 'બહેન' },
   { value: 'અન્ય', label: 'અન્ય' },
 ];
 
 const genderOptions = [
-  { value: 'પુરુષ', label: 'પુરુષ' }, 
-  { value: 'સ્ત્રી', label: 'સ્ત્રી' },
+  { value: 'પુરુષ', label: 'પુરુષ' }, { value: 'સ્ત્રી', label: 'સ્ત્રી' },
 ];
 
 export default function FamilyRegistrationScreen() {
@@ -72,36 +65,30 @@ export default function FamilyRegistrationScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('લોગીન કરવું જરૂરી છે');
 
-      // 1. Insert Family Head
-      const { data: familyHead, error: headError } = await supabase
-        .from('family_heads')
-        .insert([{
-          user_id: user.id,
-          family_name: `${headName} (${subSurname})`,
-          village: village,
-          address: `${taluko}, ${district}`,
-          total_members: members.filter(m => m.memberName.trim()).length + 1
-        }])
-        .select().single();
-
-      if (headError) throw headError;
-
-      // 2. Insert Family Members
-      const validMembers = members
+      // ✅ બધા સભ્યોને 'families' ટેબલના ફોર્મેટમાં તૈયાર કરો
+      const finalData = members
         .filter((m) => m.memberName.trim())
         .map((m) => ({
-          head_id: familyHead.id,
-          name: m.memberName,
-          relation: m.relationship,
+          user_id: user.id,
+          head_name: headName,
+          sub_surname: subSurname,
+          gol: gol,
+          village: village,
+          taluko: taluko,
+          district: district,
+          member_name: m.memberName,
+          relationship: m.relationship,
           gender: m.gender
         }));
 
-      if (validMembers.length > 0) {
-        const { error: memberError } = await supabase
-          .from('family_members')
-          .insert(validMembers);
-        if (memberError) throw memberError;
-      }
+      if (finalData.length === 0) throw new Error('ઓછામાં ઓછા એક સભ્યનું નામ લખો');
+
+      // ✅ એક જ ટેબલમાં બધો ડેટા ઇન્સર્ટ કરો
+      const { error } = await supabase
+        .from('families')
+        .insert(finalData);
+
+      if (error) throw error;
 
       setShowSuccess(true);
       setTimeout(() => navigate('/family-list'), 2000);
@@ -159,7 +146,7 @@ export default function FamilyRegistrationScreen() {
           </button>
           <div>
             <h1 className="text-white font-gujarati font-bold text-2xl">પરિવાર રજીસ્ટ્રેશન</h1>
-            <p className="text-white/80 text-sm font-gujarati">નવી એન્ટ્રી ઉમેરો</p>
+            <p className="text-white/80 text-sm font-gujarati">બધી વિગત એકસાથે સેવ થશે</p>
           </div>
         </div>
       </div>
@@ -175,7 +162,7 @@ export default function FamilyRegistrationScreen() {
 
         {/* Step 2: Members */}
         <div className="premium-card p-6 space-y-4 bg-white rounded-3xl shadow-sm">
-          <h2 className="font-bold text-gray-800 flex items-center gap-2"><Users size={20}/> પરિવારના સભ્યો</h2>
+          <h2 className="font-bold text-gray-800 flex items-center gap-2"><Users size={20}/> પરિવારના સભ્યોની યાદી</h2>
           {members.map((member, index) => (
             <div key={member.id} className="bg-gray-50 p-4 rounded-2xl space-y-3 relative border border-gray-100">
               <div className="flex justify-between items-center">
@@ -190,13 +177,13 @@ export default function FamilyRegistrationScreen() {
             </div>
           ))}
           <button onClick={addMember} className="w-full py-3 border-2 border-dashed border-gray-200 rounded-2xl text-deep-blue flex items-center justify-center gap-2 font-bold">
-            <Plus size={18} /> સભ્ય ઉમેરો
+            <Plus size={18} /> બીજા સભ્ય ઉમેરો
           </button>
         </div>
 
         {/* Step 3: Location */}
         <div className="premium-card p-6 space-y-4 bg-white rounded-3xl shadow-sm">
-          <h2 className="font-bold text-gray-800 flex items-center gap-2"><MapPin size={20}/> સ્થળની માહિતી</h2>
+          <h2 className="font-bold text-gray-800 flex items-center gap-2"><MapPin size={20}/> રહેઠાણની વિગત</h2>
           <div className="grid grid-cols-2 gap-4">
             <input type="text" value={village} onChange={(e) => setVillage(e.target.value)} placeholder="ગામ" className="w-full px-4 py-3 border border-gray-200 rounded-2xl" />
             <input type="text" value={taluko} onChange={(e) => setTaluko(e.target.value)} placeholder="તાલુકો" className="w-full px-4 py-3 border border-gray-200 rounded-2xl" />
@@ -205,18 +192,9 @@ export default function FamilyRegistrationScreen() {
         </div>
 
         <button onClick={handleSubmit} disabled={isSubmitting} className="w-full bg-deep-blue text-white font-bold py-4 rounded-2xl shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95 transition-all">
-          {isSubmitting ? <Loader2 className="animate-spin" /> : 'માહિતી સેવ કરો'}
+          {isSubmitting ? <Loader2 className="animate-spin" /> : 'બધી માહિતી સેવ કરો'}
         </button>
       </div>
-
-      <AnimatePresence>
-        {showSuccess && (
-          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="fixed bottom-24 left-6 right-6 bg-green-500 text-white p-4 rounded-2xl shadow-2xl flex items-center gap-3 z-[200]">
-            <Check className="bg-white/20 p-1 rounded-full" />
-            <p>પરિવાર સફળતાપૂર્વક રજીસ્ટર થયો!</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
       <BottomNav />
     </div>
   );
