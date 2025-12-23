@@ -3,7 +3,6 @@ import { Send, Bot, User, Loader2, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
-// ✅ ખાતરી કરો કે તમારી પાસે આ ફાઈલ છે. જો નામ અલગ હોય તો પાથ સુધારી લેજો.
 import { supabase } from '../lib/supabase';
 
 export default function AIAssistantScreen() {
@@ -37,28 +36,32 @@ export default function AIAssistantScreen() {
     scrollToBottom();
   }, [messages]);
 
-  // 🧠 Smart Function: DB Cache -> API Call -> DB Save
+  // 🧠 Smart Function: DB Cache (Smart Search) -> API Call -> DB Save
   const getAIResponse = async (userText: string) => {
     if (!userText) return "";
     
-    // પ્રશ્નને સામાન્ય ફોર્મેટમાં ફેરવો (lowercase) જેથી મેચિંગ સારું થાય
+    // પ્રશ્નને સામાન્ય ફોર્મેટમાં ફેરવો
     const cleanQuestion = userText.trim().toLowerCase();
 
     try {
       console.log("Checking Supabase Cache for:", cleanQuestion);
 
-      // 1️⃣ સ્ટેપ: Supabase ડેટાબેઝમાં ચેક કરો
+      // 1️⃣ સ્ટેપ: Smart Search Logic
+      // પ્રશ્નમાંથી ચિહ્નો (? ! .) કાઢી નાખો અને શબ્દોને અલગ કરો
+      const searchTerms = cleanQuestion.replace(/[?!.]/g, '').split(' ').join(' | ');
+
       const { data: cachedData, error: dbError } = await supabase
         .from('ai_faq_cache')
         .select('answer')
-        .eq('question', cleanQuestion)
+        // 'textSearch' વાપરીને સ્માર્ટ મેચિંગ કરીએ છીએ (Exact મેચ નહીં)
+        .textSearch('question', searchTerms, { type: 'websearch', config: 'english' })
         .maybeSingle();
 
       if (dbError) {
         console.warn("Supabase Check Error:", dbError.message);
       }
 
-      // જો ડેટાબેઝમાં જવાબ મળી જાય, તો ત્યાંથી જ આપી દો (API બિલ બચ્યું! 🎉)
+      // જો ડેટાબેઝમાં જવાબ મળી જાય, તો ત્યાંથી જ આપી દો
       if (cachedData && cachedData.answer) {
         console.log("✅ Cache Hit! Serving from DB.");
         return cachedData.answer;
@@ -69,15 +72,14 @@ export default function AIAssistantScreen() {
       // 2️⃣ સ્ટેપ: જો DB માં ના હોય, તો Gemini API ને કોલ કરો
       if (!GEMINI_API_KEY) return "API Key સેટ કરેલી નથી.";
 
-      // સ્માર્ટ મોડેલ ડિસ્કવરી (જેથી 404 ના આવે)
+      // સ્માર્ટ મોડેલ ડિસ્કવરી
       const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
       const listData = await listResponse.json();
       
       const availableModels = listData.models || [];
-      // Flash ને પહેલી પસંદગી, પછી Pro
       const bestModel = availableModels.find((m: any) => m.name.includes('gemini') && m.name.includes('flash') && m.supportedGenerationMethods?.includes('generateContent')) 
                      || availableModels.find((m: any) => m.name.includes('gemini') && m.supportedGenerationMethods?.includes('generateContent'))
-                     || { name: 'models/gemini-pro' }; // Fallback
+                     || { name: 'models/gemini-pro' };
 
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/${bestModel.name}:generateContent?key=${GEMINI_API_KEY}`,
@@ -90,12 +92,18 @@ export default function AIAssistantScreen() {
         }
       );
 
+      // 🛑 Error Handling: 429 Too Many Requests
+      if (response.status === 429) {
+        return "ક્ષમા કરશો, અત્યારે ટ્રાફિક વધુ છે. કૃપા કરીને ૧ મિનિટ પછી પ્રયત્ન કરો.";
+      }
+
       const data = await response.json();
       
       if (data.candidates && data.candidates[0].content) {
         const aiAnswer = data.candidates[0].content.parts[0].text;
 
         // 3️⃣ સ્ટેપ: મળેલા જવાબને ભવિષ્ય માટે Supabase માં સેવ કરો
+        // નોંધ: અહીં આપણે મૂળ પ્રશ્ન સેવ કરીએ છીએ જેથી ભવિષ્યમાં રેફરન્સ રહે
         const { error: insertError } = await supabase
           .from('ai_faq_cache')
           .insert([{ question: cleanQuestion, answer: aiAnswer }]);
@@ -120,12 +128,10 @@ export default function AIAssistantScreen() {
     const userMessage = input;
     setInput('');
     
-    // યુઝરનો મેસેજ બતાવો
     const newUserMsg: Message = { id: Date.now(), type: 'user', message: userMessage };
     setMessages(prev => [...prev, newUserMsg]);
     setLoading(true);
 
-    // AI નો જવાબ મેળવો (Cache અથવા API)
     const aiText = await getAIResponse(userMessage);
 
     const newAiMsg: Message = { id: Date.now() + 1, type: 'ai', message: aiText };
