@@ -2,7 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, Send, Sparkles, BookOpen, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { gitaData } from '../data/gitaData';
+
+// આપણે બનાવેલું પાવરફુલ સર્ચ એન્જિન ઈમ્પોર્ટ કરો
+import { findBestShlokas } from '../utils/gitaMatcher'; 
 
 interface Message {
   id: string;
@@ -40,28 +42,6 @@ export default function KrishnaChatScreen() {
     }
   }, [messages]);
 
-  const findSolution = (query: string) => {
-    const lowerQuery = query.toLowerCase();
-    
-    // 1. કીવર્ડ મેચિંગ
-    const match = gitaData.find(item => 
-      item.keywords.some(keyword => lowerQuery.includes(keyword))
-    );
-
-    if (match) {
-      return {
-        found: true,
-        data: match
-      };
-    } else {
-      // 2. જો કઈ ના મળે તો ડિફોલ્ટ (અધ્યાય ૨, શ્લોક ૪૭ - કર્મ વાળો)
-      return {
-        found: false,
-        data: null
-      };
-    }
-  };
-
   const handleSend = async () => {
     if (!input.trim()) return;
 
@@ -74,28 +54,32 @@ export default function KrishnaChatScreen() {
 
     // કૃષ્ણ જવાબ આપે છે (થોડો સમય લેશે)
     setTimeout(() => {
-      const result = findSolution(currentInput);
+      // ૧. અહીં આપણું પાવરફુલ ફંક્શન કોલ થશે
+      const results = findBestShlokas(currentInput);
 
-      if (result.found && result.data) {
+      if (results && results.length > 0) {
+        // ૨. સૌથી બેસ્ટ રિઝલ્ટ (પહેલું) બતાવો
+        const bestMatch = results[0];
+
         const botMsg: Message = { 
           id: (Date.now() + 1).toString(), 
           sender: 'krishna',
           shlokaData: {
-            sanskrit: result.data.sanskrit,
-            meaning: result.data.gujarati_meaning,
-            explanation: result.data.explanation,
-            action_plan: result.data.action_plan,
-            chapter: result.data.chapter,
-            shloka: result.data.shloka
+            sanskrit: bestMatch.sanskrit,
+            meaning: bestMatch.gujarati_meaning,
+            explanation: bestMatch.explanation,
+            action_plan: bestMatch.action_plan,
+            chapter: bestMatch.chapter,
+            shloka: bestMatch.shloka
           }
         };
         setMessages(prev => [...prev, botMsg]);
       } else {
-        // જો સમજાય નહીં તો
+        // ૩. જો કઈ જ ના મળે તો (જે બહુ ઓછું બનશે)
         const botMsg: Message = { 
           id: (Date.now() + 1).toString(), 
           sender: 'krishna',
-          text: "હે કૌન્તેય, હું તારી વ્યથા પૂરી સમજી શક્યો નથી. શું તું મને ટૂંકમાં કહીશ? (ઉદાહરણ: 'મને ગુસ્સો આવે છે', 'ચિંતા થાય છે', 'નિષ્ફળતા મળી')."
+          text: "હે મિત્ર, હું તારી વ્યથા પૂરી સમજી શક્યો નથી. શું તું મને ટૂંકમાં કહીશ? (ઉદાહરણ: 'મને ગુસ્સો આવે છે', 'ચિંતા થાય છે', 'નિષ્ફળતા મળી')."
         };
         setMessages(prev => [...prev, botMsg]);
       }
