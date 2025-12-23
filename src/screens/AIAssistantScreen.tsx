@@ -10,6 +10,7 @@ export default function AIAssistantScreen() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // ✅ Netlify માંથી નવી કી લેશે
   const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
   interface Message {
@@ -34,40 +35,64 @@ export default function AIAssistantScreen() {
     scrollToBottom();
   }, [messages]);
 
-  // 🤖 Gemini Pro (The most stable model for Free Tier)
+  // 🧠 Smart Function: જાતે મોડેલ શોધીને જવાબ આપશે
   const callGeminiAI = async (userText: string) => {
     if (!GEMINI_API_KEY) return "ભૂલ: API Key સેટ કરેલી નથી.";
 
     try {
-      const prompt = `You are a helpful Gujarati assistant. Answer in Gujarati only. Question: ${userText}`;
-
-      // ✅ gemini-pro સાથે નવી કી ૧૦૦% કામ કરશે
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-          }),
-        }
+      // ૧. પહેલા ઉપલબ્ધ મોડેલ્સનું લિસ્ટ મંગાવો
+      const listResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`
       );
+      const listData = await listResponse.json();
+
+      if (listData.error) throw new Error(listData.error.message);
+
+      // ૨. 'generateContent' સપોર્ટ કરતા હોય અને 'gemini' નામ હોય તેવા મોડેલ શોધો
+      // આપણે 'flash' ને પહેલી પસંદગી આપીશું કારણ કે તે ઝડપી છે
+      const availableModels = listData.models || [];
+      const bestModel = availableModels.find((m: any) => 
+        m.name.includes('gemini') && 
+        m.name.includes('flash') && 
+        m.supportedGenerationMethods?.includes('generateContent')
+      ) || availableModels.find((m: any) => 
+        m.name.includes('gemini') && 
+        m.supportedGenerationMethods?.includes('generateContent')
+      );
+
+      if (!bestModel) {
+        throw new Error("કોઈ યોગ્ય AI મોડેલ મળ્યું નથી.");
+      }
+
+      console.log("Selected Model:", bestModel.name); // કન્સોલમાં દેખાશે કે કયું મોડેલ વપરાયું
+
+      // ૩. મળેલા મોડેલનો ઉપયોગ કરીને જવાબ માંગો
+      const prompt = `You are a helpful Gujarati assistant. Answer in Gujarati only. Question: ${userText}`;
+      
+      // bestModel.name માં 'models/gemini-pro' જેવું આખું નામ હોય છે
+      const generateUrl = `https://generativelanguage.googleapis.com/v1beta/${bestModel.name}:generateContent?key=${GEMINI_API_KEY}`;
+
+      const response = await fetch(generateUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
+      });
 
       const data = await response.json();
       
-      if (data.error) {
-        console.error("API Error:", data.error);
-        // જો મોડેલ ના મળે, તો મેસેજ આપશે
-        return `ભૂલ: ${data.error.message}`;
-      }
+      if (data.error) throw new Error(data.error.message);
 
       if (data.candidates && data.candidates[0].content) {
         return data.candidates[0].content.parts[0].text;
       }
-      return "માફ કરશો, જવાબ મળ્યો નથી.";
+      
+      return "જવાબ મળ્યો નથી.";
 
     } catch (error: any) {
-      return `તકનીકી ખામી: ${error.message}`;
+      console.error("Smart AI Error:", error);
+      return `ક્ષમા કરશો, ટેકનિકલ સમસ્યા છે: ${error.message}`;
     }
   };
 
@@ -89,6 +114,7 @@ export default function AIAssistantScreen() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col pb-24 font-gujarati">
+      {/* Header */}
       <div className="bg-gradient-to-r from-violet-600 to-purple-600 safe-area-top px-4 py-4 shadow-md z-10">
         <div className="flex items-center space-x-3">
            <button onClick={() => navigate('/home')} className="p-1 bg-white/20 rounded-full">
