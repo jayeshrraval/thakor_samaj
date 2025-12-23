@@ -12,15 +12,24 @@ interface FamilyMember {
   gender: string;
 }
 
+// ✅ અપડેટ કરેલા સંબંધોના ઓપ્શન્સ
 const relationshipOptions = [
-  { value: 'પત્ની', label: 'પત્ની' }, { value: 'પુત્ર', label: 'પુત્ર' },
-  { value: 'પુત્રી', label: 'પુત્રી' }, { value: 'પિતા', label: 'પિતા' },
-  { value: 'માતા', label: 'માતા' }, { value: 'ભાઈ', label: 'ભાઈ' },
-  { value: 'બહેન', label: 'બહેન' }, { value: 'અન્ય', label: 'અન્ય' },
+  { value: 'પત્ની', label: 'પત્ની' }, 
+  { value: 'પુત્ર', label: 'પુત્ર' },
+  { value: 'પુત્રી', label: 'પુત્રી' }, 
+  { value: 'પુત્રવધૂ', label: 'પુત્રવધૂ' }, // નવું
+  { value: 'પૌત્ર', label: 'પૌત્ર' },     // નવું
+  { value: 'પૌત્રી', label: 'પૌત્રી' },   // નવું
+  { value: 'પિતા', label: 'પિતા' }, 
+  { value: 'માતા', label: 'માતા' }, 
+  { value: 'ભાઈ', label: 'ભાઈ' },
+  { value: 'બહેન', label: 'બહેન' }, 
+  { value: 'અન્ય', label: 'અન્ય' },
 ];
 
 const genderOptions = [
-  { value: 'પુરુષ', label: 'પુરુષ' }, { value: 'સ્ત્રી', label: 'સ્ત્રી' },
+  { value: 'પુરુષ', label: 'પુરુષ' }, 
+  { value: 'સ્ત્રી', label: 'સ્ત્રી' },
 ];
 
 export default function FamilyRegistrationScreen() {
@@ -29,7 +38,6 @@ export default function FamilyRegistrationScreen() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
-  // Form States
   const [headName, setHeadName] = useState('');
   const [subSurname, setSubSurname] = useState('');
   const [gol, setGol] = useState('');
@@ -85,7 +93,7 @@ export default function FamilyRegistrationScreen() {
           head_id: familyHead.id,
           name: m.memberName,
           relation: m.relationship,
-          gender: m.gender // જો તમારા ટેબલમાં જેન્ડર કોલમ ના હોય તો ઉમેરી દેજો
+          gender: m.gender
         }));
 
       if (validMembers.length > 0) {
