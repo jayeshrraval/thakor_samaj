@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, Crown, Zap, ArrowLeft } from 'lucide-react';
+import { Check, Crown, Zap, ArrowLeft, Info, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import BottomNav from '../components/BottomNav';
 
@@ -10,8 +10,8 @@ export default function SubscriptionScreen() {
   const plans = [
     {
       id: 'monthly',
-      name: 'માસિક પ્લાન',
-      nameEn: 'Monthly Plan',
+      name: 'માસિક મેમ્બરશીપ ફી',
+      nameEn: 'Monthly Membership Fee',
       price: '₹49',
       period: '/મહિનો',
       color: 'from-mint to-teal-500',
@@ -20,8 +20,8 @@ export default function SubscriptionScreen() {
     },
     {
       id: 'yearly',
-      name: 'વાર્ષિક પ્લાન',
-      nameEn: 'Yearly Plan',
+      name: 'વાર્ષિક મેમ્બરશીપ ફી',
+      nameEn: 'Yearly Membership Fee',
       price: '₹480',
       period: '/વર્ષ',
       color: 'from-royal-gold to-yellow-600',
@@ -67,14 +67,31 @@ export default function SubscriptionScreen() {
           className="inline-block mb-4"
         >
           <div className="w-20 h-20 rounded-full bg-royal-gold/20 flex items-center justify-center mx-auto">
-            <Crown className="w-10 h-10 text-royal-gold" />
+            <Heart className="w-10 h-10 text-royal-gold fill-royal-gold" />
           </div>
         </motion.div>
-        <h1 className="text-white font-gujarati font-bold text-3xl mb-2">સબ્સ્ક્રિપ્શન પ્લાન્સ</h1>
-        <p className="text-white/80 text-sm">પ્રીમિયમ સુવિધાઓનો લાભ લો</p>
+        <h1 className="text-white font-gujarati font-bold text-3xl mb-2">મેમ્બરશીપ ફી</h1>
+        <p className="text-white/80 text-sm">સમાજનું ઉત્થાન, આપણી જવાબદારી</p>
       </div>
 
       <div className="px-6 space-y-6">
+        
+        {/* 🚨 THE MANDATORY MESSAGE BOX */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white/95 backdrop-blur-sm border-l-8 border-yellow-500 p-5 rounded-2xl shadow-2xl"
+        >
+          <div className="flex items-start gap-4">
+            <div className="bg-yellow-100 p-2 rounded-full shrink-0">
+                <Info className="text-yellow-700 w-6 h-6" />
+            </div>
+            <p className="text-gray-800 font-bold leading-relaxed text-[15px] font-gujarati">
+              "આ એપ સમાજ માટે મફત છે, પણ સમાજના વિકાસ માટે દરેક સભ્યે સ્વૈચ્છિક ફાળો (Voluntary Donation) અથવા લવાજમ (Membership Fee) આપવું ફરજિયાત છે."
+            </p>
+          </div>
+        </motion.div>
+
         {/* Plan Cards */}
         {plans.map((plan, index) => {
           const Icon = plan.icon;
@@ -120,7 +137,7 @@ export default function SubscriptionScreen() {
                 onClick={() => handleSubscribe(plan.name)}
                 className={`w-full bg-gradient-to-r ${plan.color} text-white font-gujarati font-semibold py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all active:scale-95`}
               >
-                પ્લાન સબ્સ્ક્રાઇબ કરો
+                સભ્યપદ મેળવો
               </button>
             </motion.div>
           );
@@ -133,8 +150,8 @@ export default function SubscriptionScreen() {
           transition={{ delay: 0.4 }}
           className="premium-card p-6 bg-white rounded-3xl"
         >
-          <h3 className="font-gujarati font-bold text-xl text-gray-800 mb-6">
-            સબ્સ્ક્રિપ્શન લાભો
+          <h3 className="font-gujarati font-bold text-xl text-gray-800 mb-6 text-center border-b pb-2">
+             સભ્યપદના લાભો
           </h3>
           <div className="space-y-4">
             {benefits.map((benefit, index) => (
@@ -154,17 +171,6 @@ export default function SubscriptionScreen() {
               </motion.div>
             ))}
           </div>
-        </motion.div>
-
-        {/* Additional Info */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="text-center text-white/60 text-xs space-y-2 py-6"
-        >
-          <p className="font-gujarati">કોઈપણ સમયે કેન્સલ કરી શકાય છે</p>
-          <p>Cancel anytime • No hidden charges</p>
         </motion.div>
       </div>
 
