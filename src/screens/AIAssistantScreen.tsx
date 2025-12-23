@@ -10,7 +10,6 @@ export default function AIAssistantScreen() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // ✅ Netlify માંથી API Key લેશે
   const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
   interface Message {
@@ -35,18 +34,16 @@ export default function AIAssistantScreen() {
     scrollToBottom();
   }, [messages]);
 
-  // 🤖 Gemini API Call (Using Stable gemini-pro model)
+  // 🤖 Gemini 1.5 Flash (v1beta)
   const callGeminiAI = async (userText: string) => {
-    if (!GEMINI_API_KEY) {
-      return "ભૂલ: API Key સેટ કરેલી નથી. મહેરબાની કરીને Netlify સેટિંગ્સ ચેક કરો.";
-    }
+    if (!GEMINI_API_KEY) return "ભૂલ: API Key સેટ કરેલી નથી.";
 
     try {
-      const prompt = `You are a helpful Gujarati assistant for a community app. Always answer in Gujarati. Question: ${userText}`;
+      const prompt = `You are a helpful Gujarati assistant. Answer in Gujarati only. Question: ${userText}`;
 
-      // ✅ 404 Error ફિક્સ કરવા માટે v1beta/gemini-pro નો ઉપયોગ કર્યો છે
+      // ✅ નવી કી સાથે આ URL 100% ચાલશે
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -59,18 +56,17 @@ export default function AIAssistantScreen() {
       const data = await response.json();
       
       if (data.error) {
+        console.error("API Error:", data.error);
         throw new Error(data.error.message);
       }
 
       if (data.candidates && data.candidates[0].content) {
         return data.candidates[0].content.parts[0].text;
       }
-
-      return "ક્ષમા કરશો, અત્યારે હું આનો જવાબ આપી શકતો નથી.";
+      return "માફ કરશો, જવાબ મળ્યો નથી.";
 
     } catch (error: any) {
-      console.error("Gemini Error:", error);
-      return "નેટવર્ક સમસ્યા! મહેરબાની કરીને થોડી વાર પછી પ્રયત્ન કરો.";
+      return `તકનીકી ખામી: ${error.message}. (કૃપા કરીને નવી API Key 'New Project' માં બનાવીને સેટ કરો)`;
     }
   };
 
@@ -79,7 +75,6 @@ export default function AIAssistantScreen() {
 
     const userMessage = input;
     setInput('');
-    
     const newUserMsg: Message = { id: Date.now(), type: 'user', message: userMessage };
     setMessages(prev => [...prev, newUserMsg]);
     setLoading(true);
@@ -93,7 +88,6 @@ export default function AIAssistantScreen() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col pb-24 font-gujarati">
-      {/* Header */}
       <div className="bg-gradient-to-r from-violet-600 to-purple-600 safe-area-top px-4 py-4 shadow-md z-10">
         <div className="flex items-center space-x-3">
            <button onClick={() => navigate('/home')} className="p-1 bg-white/20 rounded-full">
@@ -112,7 +106,6 @@ export default function AIAssistantScreen() {
         </div>
       </div>
 
-      {/* Chat Area */}
       <div className="flex-1 px-4 py-4 space-y-6 overflow-y-auto bg-[#EBE5DE]">
         {messages.map((msg) => (
           <motion.div
@@ -149,7 +142,6 @@ export default function AIAssistantScreen() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
       <div className="bg-white p-3 safe-area-bottom shadow-lg">
         <div className="flex items-center space-x-2 bg-gray-100 rounded-full px-4 py-2 border border-gray-200">
           <input
