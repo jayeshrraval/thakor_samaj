@@ -10,7 +10,7 @@ export default function AIAssistantScreen() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // ✅ .env ફાઈલમાંથી API Key લેશે
+  // ✅ .env ફાઈલમાંથી API Key લેશે (VITE_ પ્રીફિક્સ હોવો જોઈએ)
   const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
   interface Message {
@@ -35,24 +35,24 @@ export default function AIAssistantScreen() {
     scrollToBottom();
   }, [messages]);
 
-  // 🤖 Gemini API Call Function
+  // 🤖 Gemini API Call Function (With System Instruction)
   const callGeminiAI = async (userText: string) => {
-    // કી ન મળે તો ચેતવણી
     if (!GEMINI_API_KEY) {
-      console.error("API Key Missing! Please check .env file.");
-      return "Error: API Key સેટ કરેલી નથી.";
+      console.error("API Key Missing!");
+      return "ભૂલ: API Key સેટ કરેલી નથી. કૃપા કરીને .env ફાઈલ ચેક કરો.";
     }
 
     try {
+      // AI ને ગુજરાતીમાં જવાબ આપવા માટે ફોર્સ કરો
+      const prompt = `You are a helpful Gujarati assistant for a community app. Always answer in Gujarati. Question: ${userText}`;
+
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: userText }] }],
+            contents: [{ parts: [{ text: prompt }] }],
           }),
         }
       );
@@ -63,12 +63,11 @@ export default function AIAssistantScreen() {
         throw new Error(data.error.message);
       }
 
-      const aiResponse = data.candidates[0].content.parts[0].text;
-      return aiResponse;
+      return data.candidates[0].content.parts[0].text;
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Gemini Error:", error);
-      return "માફ કરશો, અત્યારે હું જવાબ આપી શકતો નથી. કૃપા કરીને થોડી વાર પછી પ્રયત્ન કરો.";
+      return "માફ કરશો, અત્યારે સર્વર કનેક્શનમાં સમસ્યા છે. કૃપા કરીને થોડી વાર પછી પ્રયત્ન કરો.";
     }
   };
 
@@ -110,34 +109,23 @@ export default function AIAssistantScreen() {
         </div>
       </div>
 
-      {/* Chat Messages Area */}
+      {/* Chat Area */}
       <div className="flex-1 px-4 py-4 space-y-6 overflow-y-auto bg-[#EBE5DE]">
-        {messages.map((msg, index) => (
+        {messages.map((msg) => (
           <motion.div
             key={msg.id}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
             className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div className={`flex items-end space-x-2 max-w-[85%] ${msg.type === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
-              
               <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mb-1 shadow-sm ${
-                msg.type === 'user' 
-                  ? 'bg-deep-blue' 
-                  : 'bg-gradient-to-br from-violet-500 to-purple-600'
+                msg.type === 'user' ? 'bg-deep-blue' : 'bg-gradient-to-br from-violet-500 to-purple-600'
               }`}>
-                {msg.type === 'user' ? (
-                  <User className="w-4 h-4 text-white" />
-                ) : (
-                  <Bot className="w-4 h-4 text-white" />
-                )}
+                {msg.type === 'user' ? <User className="w-4 h-4 text-white" /> : <Bot className="w-4 h-4 text-white" />}
               </div>
-
               <div className={`px-4 py-3 shadow-md text-sm font-gujarati leading-relaxed whitespace-pre-wrap ${
-                msg.type === 'user'
-                  ? 'bg-[#dcf8c6] text-gray-800 rounded-2xl rounded-br-none'
-                  : 'bg-white text-gray-800 rounded-2xl rounded-bl-none'
+                msg.type === 'user' ? 'bg-[#dcf8c6] text-gray-800 rounded-2xl rounded-br-none' : 'bg-white text-gray-800 rounded-2xl rounded-bl-none'
               }`}>
                 {msg.message}
               </div>
@@ -146,22 +134,15 @@ export default function AIAssistantScreen() {
         ))}
 
         {loading && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex items-center space-x-2"
-          >
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-               <Bot className="w-4 h-4 text-white" />
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 rounded-full bg-violet-500 flex items-center justify-center"><Bot className="w-4 h-4 text-white" /></div>
+            <div className="bg-white px-4 py-3 rounded-2xl shadow-md flex space-x-1">
+              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
             </div>
-            <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-none shadow-md flex space-x-1">
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-            </div>
-          </motion.div>
+          </div>
         )}
-        
         <div ref={messagesEndRef} />
       </div>
 
@@ -175,18 +156,17 @@ export default function AIAssistantScreen() {
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             placeholder="તમારો પ્રશ્ન પૂછો..."
             disabled={loading}
-            className="flex-1 bg-transparent focus:outline-none font-gujarati text-gray-700 placeholder-gray-500"
+            className="flex-1 bg-transparent focus:outline-none font-gujarati text-gray-700"
           />
           <button 
             onClick={handleSend}
             disabled={loading || !input.trim()}
-            className="p-2 bg-violet-600 rounded-full text-white disabled:opacity-50 active:scale-90 transition-transform shadow-md"
+            className="p-2 bg-violet-600 rounded-full text-white disabled:opacity-50 active:scale-90 transition-transform"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 ml-0.5" />}
           </button>
         </div>
       </div>
-
       <BottomNav />
     </div>
   );
