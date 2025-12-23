@@ -56,16 +56,13 @@ export default function HomeScreen() {
     }
   };
 
+  // --- યોગીગ્રામ કાર્ડ અહીંથી કાઢી નાખ્યું છે ---
   const featureCards = [
     { icon: Heart, title: 'મેટ્રિમોની પ્રોફાઈલ', color: 'from-pink-400 to-rose-500', path: '/matrimony' },
     { icon: Search, title: 'પાર્ટનર શોધો', color: 'from-mint to-teal-500', path: '/matrimony' },
     { icon: Users, title: 'પરિવાર રજીસ્ટ્રેશન', color: 'from-deep-blue to-cyan-500', path: '/family-list' },
     { icon: GraduationCap, title: 'શિક્ષણ અને ભવિષ્ય', color: 'from-indigo-400 to-purple-500', path: '/education' },
-    
-    // JOB CARD
     { icon: Briefcase, title: 'નોકરીની જાહેરાત', color: 'from-blue-600 to-indigo-600', path: '/jobs' },
-    
-    { icon: MessageCircle, title: 'યોગીગ્રામ', color: 'from-purple-400 to-indigo-500', path: '/yogigram' },
     { icon: MessageCircle, title: 'મેસેજ', color: 'from-blue-400 to-cyan-500', path: '/messages' },
     { icon: User, title: 'મારી પ્રોફાઈલ', color: 'from-amber-400 to-orange-500', path: '/profile' },
     { icon: CreditCard, title: 'સબ્સ્ક્રિપ્શન', color: 'from-royal-gold to-yellow-600', path: '/subscription' },
@@ -109,7 +106,7 @@ export default function HomeScreen() {
         </div>
       </div>
 
-      {/* --- NEW: KRISHNA SARATHI BANNER --- */}
+      {/* --- KRISHNA SARATHI BANNER --- */}
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
