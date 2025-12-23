@@ -31,7 +31,7 @@ import DailyGuidanceScreen from './screens/DailyGuidanceScreen';
 
 // --- 5. Social & Trust ---
 import TrustScreen from './screens/TrustScreen';
-import SamuhLagnaForm from './screens/SamuhLagnaForm'; // <--- NEW: આ આપણે ઉમેર્યું
+import SamuhLagnaForm from './screens/SamuhLagnaForm'; 
 
 // --- 6. Emergency Aid ---
 import AccidentalAidScreen from './screens/AccidentalAidScreen';
@@ -42,6 +42,9 @@ import JobPostScreen from './screens/JobPostScreen';
 // --- 8. Premium & AI ---
 import SubscriptionScreen from './screens/SubscriptionScreen';
 import AIAssistantScreen from './screens/AIAssistantScreen';
+
+// --- NEW: KRISHNA CHAT IMPORT ---
+import KrishnaChatScreen from './screens/KrishnaChatScreen'; // <--- આ ઉમેર્યું
 
 // --- 9. Settings & Profile ---
 import ProfileScreen from './screens/ProfileScreen';
@@ -126,14 +129,15 @@ export default function App() {
 
         {/* --- Social, Trust & Aid --- */}
         <Route path="/trust" element={<ProtectedRoute><TrustScreen /></ProtectedRoute>} />
-        {/* NEW: આ લાઈન ઉમેરી એટલે બટન કામ કરશે */}
         <Route path="/samuh-lagna-form" element={<ProtectedRoute><SamuhLagnaForm /></ProtectedRoute>} /> 
-        
         <Route path="/accidental-aid" element={<ProtectedRoute><AccidentalAidScreen /></ProtectedRoute>} />
 
         {/* --- Premium & AI --- */}
         <Route path="/subscription" element={<ProtectedRoute><SubscriptionScreen /></ProtectedRoute>} />
         <Route path="/ai-assistant" element={<ProtectedRoute><AIAssistantScreen /></ProtectedRoute>} />
+        
+        {/* --- NEW: KRISHNA CHAT ROUTE --- */}
+        <Route path="/krishna-chat" element={<ProtectedRoute><KrishnaChatScreen /></ProtectedRoute>} /> 
 
         {/* --- Profile & Settings --- */}
         <Route path="/profile" element={<ProtectedRoute><ProfileScreen /></ProtectedRoute>} />

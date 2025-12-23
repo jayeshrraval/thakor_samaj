@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   Bell, Settings, Heart, Search, MessageCircle, User, CreditCard, 
   Building2, Bot, Users, GraduationCap, AlertTriangle, Briefcase 
-} from 'lucide-react'; // Briefcase icon added here
+} from 'lucide-react'; 
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import BottomNav from '../components/BottomNav';
@@ -36,7 +36,7 @@ export default function HomeScreen() {
         if (userProfile?.full_name) {
           setUserName(userProfile.full_name);
         } else {
-            setUserName(user.user_metadata?.full_name || 'Yogi Member');
+           setUserName(user.user_metadata?.full_name || 'Yogi Member');
         }
 
         const { count: profileCount } = await supabase.from('matrimony_profiles').select('*', { count: 'exact', head: true });
@@ -62,7 +62,7 @@ export default function HomeScreen() {
     { icon: Users, title: 'પરિવાર રજીસ્ટ્રેશન', color: 'from-deep-blue to-cyan-500', path: '/family-list' },
     { icon: GraduationCap, title: 'શિક્ષણ અને ભવિષ્ય', color: 'from-indigo-400 to-purple-500', path: '/education' },
     
-    // --- NEW JOB CARD ADDED HERE ---
+    // JOB CARD
     { icon: Briefcase, title: 'નોકરીની જાહેરાત', color: 'from-blue-600 to-indigo-600', path: '/jobs' },
     
     { icon: MessageCircle, title: 'યોગીગ્રામ', color: 'from-purple-400 to-indigo-500', path: '/yogigram' },
@@ -108,6 +108,25 @@ export default function HomeScreen() {
           </div>
         </div>
       </div>
+
+      {/* --- NEW: KRISHNA SARATHI BANNER --- */}
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        onClick={() => navigate('/krishna-chat')}
+        className="mx-6 mt-6 p-5 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-2xl shadow-lg flex items-center justify-between cursor-pointer active:scale-95 transition-transform relative overflow-hidden border border-white/20"
+      >
+        <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
+        <div className="relative z-10 text-white">
+          <h3 className="font-bold text-lg flex items-center gap-2">
+            🦚 કૃષ્ણ સારથી (AI)
+          </h3>
+          <p className="text-xs text-orange-100 mt-1 font-medium">તમારી સમસ્યા, ગીતાજીનો ઉકેલ.</p>
+        </div>
+        <div className="relative z-10 w-12 h-12 bg-white/20 rounded-full flex items-center justify-center border-2 border-white/50 shadow-inner">
+          <span className="text-2xl">🙏</span>
+        </div>
+      </motion.div>
 
       {/* Feature Cards Grid */}
       <div className="px-6 py-6">
