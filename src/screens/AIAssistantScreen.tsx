@@ -3,6 +3,8 @@ import { Send, Bot, User, Loader2, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+// ✅ ખાતરી કરો કે તમારી પાસે આ ફાઈલ છે. જો નામ અલગ હોય તો પાથ સુધારી લેજો.
+import { supabase } from '../lib/supabase';
 
 export default function AIAssistantScreen() {
   const navigate = useNavigate();
@@ -10,7 +12,7 @@ export default function AIAssistantScreen() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // ✅ Netlify માંથી નવી કી લેશે
+  // Netlify Environment Variable
   const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
   interface Message {
@@ -35,64 +37,80 @@ export default function AIAssistantScreen() {
     scrollToBottom();
   }, [messages]);
 
-  // 🧠 Smart Function: જાતે મોડેલ શોધીને જવાબ આપશે
-  const callGeminiAI = async (userText: string) => {
-    if (!GEMINI_API_KEY) return "ભૂલ: API Key સેટ કરેલી નથી.";
+  // 🧠 Smart Function: DB Cache -> API Call -> DB Save
+  const getAIResponse = async (userText: string) => {
+    if (!userText) return "";
+    
+    // પ્રશ્નને સામાન્ય ફોર્મેટમાં ફેરવો (lowercase) જેથી મેચિંગ સારું થાય
+    const cleanQuestion = userText.trim().toLowerCase();
 
     try {
-      // ૧. પહેલા ઉપલબ્ધ મોડેલ્સનું લિસ્ટ મંગાવો
-      const listResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`
-      );
-      const listData = await listResponse.json();
+      console.log("Checking Supabase Cache for:", cleanQuestion);
 
-      if (listData.error) throw new Error(listData.error.message);
+      // 1️⃣ સ્ટેપ: Supabase ડેટાબેઝમાં ચેક કરો
+      const { data: cachedData, error: dbError } = await supabase
+        .from('ai_faq_cache')
+        .select('answer')
+        .eq('question', cleanQuestion)
+        .maybeSingle();
 
-      // ૨. 'generateContent' સપોર્ટ કરતા હોય અને 'gemini' નામ હોય તેવા મોડેલ શોધો
-      // આપણે 'flash' ને પહેલી પસંદગી આપીશું કારણ કે તે ઝડપી છે
-      const availableModels = listData.models || [];
-      const bestModel = availableModels.find((m: any) => 
-        m.name.includes('gemini') && 
-        m.name.includes('flash') && 
-        m.supportedGenerationMethods?.includes('generateContent')
-      ) || availableModels.find((m: any) => 
-        m.name.includes('gemini') && 
-        m.supportedGenerationMethods?.includes('generateContent')
-      );
-
-      if (!bestModel) {
-        throw new Error("કોઈ યોગ્ય AI મોડેલ મળ્યું નથી.");
+      if (dbError) {
+        console.warn("Supabase Check Error:", dbError.message);
       }
 
-      console.log("Selected Model:", bestModel.name); // કન્સોલમાં દેખાશે કે કયું મોડેલ વપરાયું
+      // જો ડેટાબેઝમાં જવાબ મળી જાય, તો ત્યાંથી જ આપી દો (API બિલ બચ્યું! 🎉)
+      if (cachedData && cachedData.answer) {
+        console.log("✅ Cache Hit! Serving from DB.");
+        return cachedData.answer;
+      }
 
-      // ૩. મળેલા મોડેલનો ઉપયોગ કરીને જવાબ માંગો
-      const prompt = `You are a helpful Gujarati assistant. Answer in Gujarati only. Question: ${userText}`;
+      console.log("❌ Cache Miss. Calling Gemini API...");
+
+      // 2️⃣ સ્ટેપ: જો DB માં ના હોય, તો Gemini API ને કોલ કરો
+      if (!GEMINI_API_KEY) return "API Key સેટ કરેલી નથી.";
+
+      // સ્માર્ટ મોડેલ ડિસ્કવરી (જેથી 404 ના આવે)
+      const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
+      const listData = await listResponse.json();
       
-      // bestModel.name માં 'models/gemini-pro' જેવું આખું નામ હોય છે
-      const generateUrl = `https://generativelanguage.googleapis.com/v1beta/${bestModel.name}:generateContent?key=${GEMINI_API_KEY}`;
+      const availableModels = listData.models || [];
+      // Flash ને પહેલી પસંદગી, પછી Pro
+      const bestModel = availableModels.find((m: any) => m.name.includes('gemini') && m.name.includes('flash') && m.supportedGenerationMethods?.includes('generateContent')) 
+                     || availableModels.find((m: any) => m.name.includes('gemini') && m.supportedGenerationMethods?.includes('generateContent'))
+                     || { name: 'models/gemini-pro' }; // Fallback
 
-      const response = await fetch(generateUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        }),
-      });
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/${bestModel.name}:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `You are a helpful Gujarati assistant. Answer in Gujarati only. Question: ${userText}` }] }],
+          }),
+        }
+      );
 
       const data = await response.json();
       
-      if (data.error) throw new Error(data.error.message);
-
       if (data.candidates && data.candidates[0].content) {
-        return data.candidates[0].content.parts[0].text;
+        const aiAnswer = data.candidates[0].content.parts[0].text;
+
+        // 3️⃣ સ્ટેપ: મળેલા જવાબને ભવિષ્ય માટે Supabase માં સેવ કરો
+        const { error: insertError } = await supabase
+          .from('ai_faq_cache')
+          .insert([{ question: cleanQuestion, answer: aiAnswer }]);
+
+        if (insertError) console.error("Failed to cache answer:", insertError.message);
+        else console.log("✅ New answer cached in DB!");
+          
+        return aiAnswer;
       }
       
-      return "જવાબ મળ્યો નથી.";
+      return "માફ કરશો, અત્યારે સર્વર વ્યસ્ત છે.";
 
     } catch (error: any) {
-      console.error("Smart AI Error:", error);
-      return `ક્ષમા કરશો, ટેકનિકલ સમસ્યા છે: ${error.message}`;
+      console.error("System Error:", error);
+      return "ટેકનિકલ સમસ્યા આવી છે.";
     }
   };
 
@@ -101,11 +119,14 @@ export default function AIAssistantScreen() {
 
     const userMessage = input;
     setInput('');
+    
+    // યુઝરનો મેસેજ બતાવો
     const newUserMsg: Message = { id: Date.now(), type: 'user', message: userMessage };
     setMessages(prev => [...prev, newUserMsg]);
     setLoading(true);
 
-    const aiText = await callGeminiAI(userMessage);
+    // AI નો જવાબ મેળવો (Cache અથવા API)
+    const aiText = await getAIResponse(userMessage);
 
     const newAiMsg: Message = { id: Date.now() + 1, type: 'ai', message: aiText };
     setMessages(prev => [...prev, newAiMsg]);
@@ -133,6 +154,7 @@ export default function AIAssistantScreen() {
         </div>
       </div>
 
+      {/* Chat Area */}
       <div className="flex-1 px-4 py-4 space-y-6 overflow-y-auto bg-[#EBE5DE]">
         {messages.map((msg) => (
           <motion.div
@@ -169,6 +191,7 @@ export default function AIAssistantScreen() {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Input Area */}
       <div className="bg-white p-3 safe-area-bottom shadow-lg">
         <div className="flex items-center space-x-2 bg-gray-100 rounded-full px-4 py-2 border border-gray-200">
           <input
