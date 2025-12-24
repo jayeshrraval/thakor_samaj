@@ -41,7 +41,8 @@ export default function TrustScreen() {
     school_college: '',
     percentage: '',
     passing_year: '',
-    marksheet_url: ''
+    marksheet_url: '',
+    mobile: ''
   });
 
   const sections = [
@@ -121,6 +122,7 @@ export default function TrustScreen() {
                 percentage: formData.percentage,
                 passing_year: formData.passing_year,
                 marksheet_url: formData.marksheet_url,
+                mobile: fromData.mobile,
                 event_type: selectedEvent?.title,
                 status: 'Pending'
             }
@@ -137,7 +139,7 @@ export default function TrustScreen() {
         
         alert(`સફળતાપૂર્વક રજીસ્ટ્રેશન થઈ ગયું છે! 🙏`);
         setShowRegModal(false);
-        setFormData({ full_name: '', sub_surname: '', village: '', taluko: '', district: '', gol: '', school_college: '', percentage: '', passing_year: '', marksheet_url: '' });
+        setFormData({ full_name: '', sub_surname: '', village: '', taluko: '', district: '', gol: '', school_college: '', percentage: '', passing_year: '', marksheet_url: '', mobile: '' });
         fetchEvents();
     } catch (error: any) {
         alert('Error: ' + error.message);
