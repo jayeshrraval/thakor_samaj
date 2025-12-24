@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Heart, Loader2, User, MapPin, Briefcase, GraduationCap, Camera } from 'lucide-react';
+import { Search, Heart, Loader2, User, MapPin, Briefcase, GraduationCap, Camera, Bell, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../supabaseClient'; 
 
 type TabType = 'list' | 'detail' | 'myprofile';
 
 export default function MatrimonyScreen() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('list');
   const [profiles, setProfiles] = useState<any[]>([]);
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
@@ -38,13 +40,8 @@ export default function MatrimonyScreen() {
   const fetchProfiles = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
-    
-    // પોતાની પ્રોફાઇલ સિવાયની બધી પ્રોફાઇલ બતાવો
     let query = supabase.from('matrimony_profiles').select('*').order('created_at', { ascending: false });
-    
-    // જો તમે ઇચ્છો કે બધાની પ્રોફાઇલ દેખાય (પોતાની પણ), તો નીચેની લાઇન કાઢી નાખવી
     if (user) query = query.neq('user_id', user.id);
-    
     const { data, error } = await query;
     if (data) setProfiles(data);
     setLoading(false);
@@ -58,33 +55,48 @@ export default function MatrimonyScreen() {
     }
   };
 
-  // ✅ ફોટો અપલોડ કરવાનું લોજિક
+  // ✅ રિક્વેસ્ટ મોકલવાનું લોજિક
+  const handleSendRequest = async (receiverId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return alert('કૃપા કરીને પહેલા લોગીન કરો.');
+
+      const { error } = await supabase
+        .from('requests')
+        .insert([
+          { 
+            sender_id: user.id, 
+            receiver_id: receiverId, 
+            status: 'pending' 
+          }
+        ]);
+
+      if (error) {
+        if (error.code === '23505') return alert('તમે આ વ્યક્તિને પહેલાથી રિક્વેસ્ટ મોકલી દીધી છે.');
+        throw error;
+      }
+
+      alert('રિક્વેસ્ટ સફળતાપૂર્વક મોકલાઈ ગઈ! 🎉');
+    } catch (error: any) {
+      alert('ભૂલ આવી: ' + error.message);
+    }
+  };
+
   const handleImageUpload = async (event: any) => {
     try {
       setUploading(true);
       const file = event.target.files[0];
       if (!file) return;
-
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}-${Math.random()}.${fileExt}`;
       const filePath = `matrimony/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars') // ખાતરી કરો કે આ બકેટ પબ્લિક છે
-        .upload(filePath, file);
-
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file);
       if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
       setFormData(prev => ({ ...prev, image_url: publicUrl }));
-      alert('ફોટો અપલોડ થઈ ગયો! હવે પ્રોફાઇલ સેવ કરો.');
-
+      alert('ફોટો અપલોડ થઈ ગયો!');
     } catch (error: any) {
       alert('અપલોડમાં ભૂલ: ' + error.message);
     } finally {
@@ -97,16 +109,14 @@ export default function MatrimonyScreen() {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return alert('લોગીન કરો.');
-
       const { error } = await supabase.from('matrimony_profiles').upsert({
         user_id: user.id,
         ...formData,
         age: parseInt(formData.age) || 0,
         updated_at: new Date()
       }, { onConflict: 'user_id' });
-
       if (error) throw error;
-      alert('તમારી પ્રોફાઇલ સફળતાપૂર્વક સેવ થઈ ગઈ! 🎉');
+      alert('પ્રોફાઇલ સેવ થઈ ગઈ! 🎉');
       setActiveTab('list');
       fetchProfiles();
     } catch (error: any) {
@@ -118,10 +128,18 @@ export default function MatrimonyScreen() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 font-gujarati">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-pink-500 to-rose-600 px-6 py-8 shadow-lg">
-        <h1 className="text-white font-bold text-3xl">મેટ્રિમોની</h1>
-        <p className="text-pink-100 text-sm mt-1 opacity-90 tracking-wide">યોગ્ય જીવનસાથીની પસંદગી</p>
+      {/* Header with Navigation */}
+      <div className="bg-gradient-to-r from-pink-500 to-rose-600 px-6 py-8 shadow-lg flex justify-between items-center">
+        <div>
+          <h1 className="text-white font-bold text-3xl">મેટ્રિમોની</h1>
+          <p className="text-pink-100 text-sm mt-1 opacity-90 tracking-wide">યોગ્ય જીવનસાથીની પસંદગી</p>
+        </div>
+        <button 
+          onClick={() => navigate('/requests')} 
+          className="bg-white/20 p-3 rounded-2xl backdrop-blur-md border border-white/30 text-white active:scale-90 transition-all"
+        >
+          <Bell size={24} />
+        </button>
       </div>
 
       {/* Tabs */}
@@ -173,9 +191,16 @@ export default function MatrimonyScreen() {
                           <div className="mt-2 flex gap-2">
                              <button 
                                 onClick={() => { setSelectedProfile(profile); setActiveTab('detail'); }}
-                                className="bg-pink-600 text-white px-5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm active:scale-90 transition-all"
+                                className="bg-pink-600 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm active:scale-90 transition-all"
                              >
-                                વિગત જુઓ
+                                વિગત
+                             </button>
+                             {/* ✅ રિક્વેસ્ટ બટન */}
+                             <button 
+                                onClick={() => handleSendRequest(profile.user_id)}
+                                className="bg-white text-pink-600 border border-pink-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm active:scale-90 transition-all"
+                             >
+                                રિક્વેસ્ટ
                              </button>
                           </div>
                        </div>
@@ -207,16 +232,22 @@ export default function MatrimonyScreen() {
                             <DetailRow icon={GraduationCap} label="શિક્ષણ" value={selectedProfile.education} />
                             <DetailRow icon={Heart} label="ગોળ" value={selectedProfile.gol} />
                         </div>
+
+                        {/* ✅ ડિટેલ પેજમાં પણ રિક્વેસ્ટ બટન */}
+                        <button 
+                            onClick={() => handleSendRequest(selectedProfile.user_id)}
+                            className="w-full mt-6 bg-pink-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all uppercase tracking-widest"
+                        >
+                            જોડાવા માટે રિક્વેસ્ટ મોકલો
+                        </button>
                     </div>
-                ) : <p className="text-center text-gray-400">કૃપા કરીને લિસ્ટમાંથી પ્રોફાઇલ પસંદ કરો.</p>}
+                ) : <p className="text-center text-gray-400">લિસ્ટમાંથી પ્રોફાઇલ પસંદ કરો.</p>}
             </div>
         )}
 
         {activeTab === 'myprofile' && (
           <div className="space-y-4">
             <div className="bg-white p-6 rounded-[35px] shadow-sm border border-gray-100 space-y-4">
-              
-              {/* ✅ ફોટો અપલોડ સેક્શન */}
               <div className="flex flex-col items-center mb-6">
                 <div className="relative group">
                   <div className="w-32 h-32 rounded-3xl bg-gray-50 border-2 border-dashed border-pink-200 overflow-hidden flex items-center justify-center shadow-inner">
@@ -231,21 +262,14 @@ export default function MatrimonyScreen() {
                     <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                   </label>
                 </div>
-                <p className="text-[10px] font-black text-gray-400 mt-4 uppercase tracking-widest">તમારો સારો ફોટો અપલોડ કરો</p>
               </div>
 
               <h3 className="font-bold text-gray-800 mb-4 border-b pb-2">વ્યક્તિગત માહિતી</h3>
               {[
                 { label: 'પૂરું નામ', field: 'full_name' },
-                { label: 'પિતા નું નામ', field: 'father_name' },
-                { label: 'માતા નું નામ', field: 'mother_name' },
                 { label: 'પેટા અટક', field: 'peta_atak' },
-                { label: 'માતાની પેટા અટક', field: 'mother_peta_atak' },
-                { label: 'ગોળ (દા.ત. કાશ્યપ)', field: 'gol' },
                 { label: 'વય (ઉંમર)', field: 'age' },
                 { label: 'ગામ', field: 'village' },
-                { label: 'તાલુકો', field: 'taluka' },
-                { label: 'જીલ્લો', field: 'district' },
                 { label: 'શિક્ષણ', field: 'education' },
                 { label: 'નોકરી/ધંધો', field: 'occupation' },
               ].map((item) => (
@@ -256,27 +280,16 @@ export default function MatrimonyScreen() {
                     value={(formData as any)[item.field]}
                     onChange={(e) => setFormData({ ...formData, [item.field]: e.target.value })}
                     className="w-full px-5 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-pink-500 font-bold text-gray-700"
-                    placeholder={`${item.label} લખો`}
                   />
                 </div>
               ))}
-
-              <div className="flex items-center justify-between p-4 bg-pink-50 rounded-2xl">
-                <span className="text-sm font-bold text-pink-700">કુંડળી ઉપલબ્ધ છે?</span>
-                <input 
-                  type="checkbox" 
-                  className="w-6 h-6 accent-pink-600 rounded"
-                  checked={formData.kundali_available}
-                  onChange={(e) => setFormData({...formData, kundali_available: e.target.checked})}
-                />
-              </div>
 
               <button 
                 onClick={handleSaveProfile}
                 disabled={loading || uploading}
                 className="w-full bg-pink-600 text-white font-black py-4 rounded-[20px] shadow-lg active:scale-95 transition-all mt-6 uppercase tracking-widest disabled:opacity-50"
               >
-                {loading ? <Loader2 className="animate-spin mx-auto text-white" /> : 'પ્રોફાઇલ સેવ કરો'}
+                {loading ? 'સેવ થઈ રહ્યું છે...' : 'પ્રોફાઇલ સેવ કરો'}
               </button>
             </div>
           </div>
@@ -287,7 +300,6 @@ export default function MatrimonyScreen() {
   );
 }
 
-// Helper Component
 function DetailRow({ icon: Icon, label, value }: any) {
     return (
         <div className="flex flex-col p-3 bg-gray-50 rounded-2xl">

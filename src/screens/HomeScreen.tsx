@@ -20,8 +20,26 @@ export default function HomeScreen() {
     messages: 0
   });
 
+  // --- Real-time Logic ---
   useEffect(() => {
     fetchDashboardData();
+
+    // ડેટાબેઝમાં ફેરફાર થાય તો ઓટોમેટિક અપડેટ કરો
+    const channel = supabase
+      .channel('realtime-counts')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'matrimony_profiles' },
+        () => {
+          console.log('Update: New profile detected!');
+          fetchDashboardData(); 
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchDashboardData = async () => {
@@ -39,9 +57,20 @@ export default function HomeScreen() {
           setUserPhoto(userData.avatar_url);
         }
 
-        const { count: profileCount } = await supabase.from('matrimony_profiles').select('*', { count: 'exact', head: true });
-        const { count: interestCount } = await supabase.from('requests').select('*', { count: 'exact', head: true }).eq('from_user_id', user.id); 
-        const { count: messageCount } = await supabase.from('messages').select('*', { count: 'exact', head: true }).eq('is_read', false); 
+        // લાઈવ કાઉન્ટ ખેંચો
+        const { count: profileCount } = await supabase
+          .from('matrimony_profiles')
+          .select('*', { count: 'exact', head: true });
+          
+        const { count: interestCount } = await supabase
+          .from('requests')
+          .select('*', { count: 'exact', head: true })
+          .eq('from_user_id', user.id); 
+
+        const { count: messageCount } = await supabase
+          .from('messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('is_read', false); 
 
         setStatsData({
             profiles: profileCount || 0,
@@ -66,7 +95,6 @@ export default function HomeScreen() {
     { icon: User, title: 'મારી પ્રોફાઈલ', color: 'from-amber-400 to-orange-500', path: '/profile' },
     { icon: CreditCard, title: 'મેમ્બરશીપ ફી', color: 'from-royal-gold to-yellow-600', path: '/subscription' },
     { icon: Building2, title: 'યોગી સમાજ ટ્રસ્ટ', color: 'from-emerald-400 to-green-500', path: '/trust' },
-    // ✅ જ્ઞાન સહાયક માટેનો સાચો પાથ
     { icon: Bot, title: 'જ્ઞાન સહાયક', color: 'from-violet-400 to-purple-500', path: '/ai-assistant' },
   ];
 
@@ -109,7 +137,6 @@ export default function HomeScreen() {
         </div>
       </div>
 
-      {/* KRISHNA SARATHI BANNER - ✅ હવે સાચો પાથ /krishna-chat સેટ કર્યો છે */}
       <motion.div 
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
