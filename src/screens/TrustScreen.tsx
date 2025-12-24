@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Users, Heart, PartyPopper, MessageSquare, Send, Loader2 } from 'lucide-react';
+import { Calendar, Users, Heart, PartyPopper, MessageSquare, Send, Loader2, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../supabaseClient'; 
 
-// TypeScript Interfaces (ડેટા ના પ્રકાર નક્કી કર્યા)
+// TypeScript Interfaces
 interface TrustEvent {
   id: string;
   title: string;
@@ -56,11 +56,11 @@ export default function TrustScreen() {
 
   // --- Suggestion Submit ---
   const handleSuggestionSubmit = async () => {
-    if (!suggestion.trim()) return alert("કૃપા કરીને કંઈક લખો.");
+    if (!suggestion.trim()) return alert("કૃપા કરીને તમારું સૂચન લખો.");
     setSubmitting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return alert("પ્લીઝ લોગીન કરો.");
+      if (!user) return alert("કૃપા કરીને લોગીન કરો.");
 
       const { error } = await supabase
         .from('trust_suggestions')
@@ -68,82 +68,80 @@ export default function TrustScreen() {
 
       if (error) throw error;
 
-      alert("તમારું સૂચન મોકલાઈ ગયું છે! આભાર. 🙏");
+      alert("તમારું સૂચન સફળતાપૂર્વક મોકલાઈ ગયું છે! આભાર. 🙏");
       setSuggestion('');
     } catch (error: any) {
-      alert("Error: " + error.message);
+      alert("ભૂલ આવી: " + error.message);
     } finally {
       setSubmitting(false);
     }
   };
 
-  // --- MAIN LOGIC: Register for Event ---
+  // --- Register for Event ---
   const handleRegister = async (event: TrustEvent) => {
     try {
         setRegLoading(event.id);
         
-        // 1. Check Login
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-            alert("રજીસ્ટ્રેશન કરવા માટે લોગિન જરૂરી છે.");
+            alert("રજીસ્ટ્રેશન કરવા માટે લોગીન કરવું જરૂરી છે.");
             return;
         }
 
-        // 2. Get User Details
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
+        // ✅ સુધારો: 'profiles' ને બદલે 'users' ટેબલ વાપર્યું છે
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('full_name, mobile, village')
             .eq('id', user.id)
             .single();
 
-        if (error || !data) {
-            alert("તમારી પ્રોફાઈલ અધૂરી છે. પહેલા પ્રોફાઈલ ભરો.");
+        if (userError || !userData) {
+            alert("તમારી પ્રોફાઇલ વિગત મળી નથી. કૃપા કરીને પહેલા તમારી પ્રોફાઇલ પૂર્ણ કરો.");
             return;
         }
 
-        const profile: UserProfile = data;
-
-        // 3. Insert into 'trust_registrations'
+        // --- Insert into 'trust_registrations' ---
         const { error: regError } = await supabase.from('trust_registrations').insert([
             {
-                full_name: profile.full_name,
-                mobile: profile.mobile,
-                village: profile.village,
-                event_type: 'Samuh Lagna', // Default or dynamic based on requirement
-                details: `Registered for: ${event.title}`,
+                user_id: user.id,
+                full_name: userData.full_name,
+                mobile: userData.mobile,
+                village: userData.village,
+                event_type: event.title,
+                details: `ઈવેન્ટ માટે રજીસ્ટ્રેશન: ${event.title}`,
                 status: 'Pending'
             }
         ]);
 
         if (regError) throw regError;
 
-        // 4. Update Attendee Count
+        // --- Update Attendee Count ---
         await supabase
             .from('trust_events')
             .update({ attendees_count: (event.attendees_count || 0) + 1 })
             .eq('id', event.id);
             
-        fetchEvents(); // Refresh count
+        fetchEvents(); 
 
-        alert(`સફળતાપૂર્વક રજીસ્ટર થઈ ગયું! એડમિન તમારો સંપર્ક કરશે.`);
+        alert(`સફળતાપૂર્વક નામ નોંધાઈ ગયું છે! ટ્રસ્ટના સભ્યો તમારો સંપર્ક કરશે. 🙏`);
 
     } catch (error: any) {
-        alert('Error: ' + error.message);
+        alert('ભૂલ આવી: ' + error.message);
     } finally {
         setRegLoading(null);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-gray-50 pb-24 font-gujarati">
       {/* Header */}
       <div className="bg-gradient-to-r from-emerald-500 to-green-500 pt-12 px-6 py-6 rounded-b-[2rem] shadow-lg">
         <h1 className="text-white font-bold text-2xl">યોગી સમાજ ટ્રસ્ટ</h1>
-        <p className="text-white/80 text-sm">સમાજ સેવા અને વિકાસ</p>
+        <p className="text-white/80 text-sm">સમાજ સેવા અને સર્વાંગી વિકાસ</p>
       </div>
 
       <div className="px-6 -mt-8 space-y-6">
-        {/* Trust Balance Card */}
+        {/* Trust Balance Card - ✅ Fund Set to 0 */}
         <motion.div 
             initial={{ opacity: 0, scale: 0.95 }} 
             animate={{ opacity: 1, scale: 1 }} 
@@ -151,8 +149,8 @@ export default function TrustScreen() {
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
           <div className="relative z-10">
-            <p className="text-white/80 text-sm mb-2 font-medium">Trust Balance</p>
-            <h2 className="text-4xl font-bold mb-4 drop-shadow-md">₹2,45,680</h2>
+            <p className="text-white/80 text-sm mb-2 font-medium">ટ્રસ્ટ બેલેન્સ (Balance)</p>
+            <h2 className="text-4xl font-bold mb-4 drop-shadow-md">₹0</h2>
             <p className="text-white/90 text-sm bg-black/10 inline-block px-3 py-1 rounded-full backdrop-blur-sm">સમાજ વિકાસ ફંડ</p>
           </div>
         </motion.div>
@@ -186,7 +184,7 @@ export default function TrustScreen() {
             <div className="flex justify-center py-8"><Loader2 className="w-8 h-8 text-emerald-500 animate-spin" /></div>
           ) : events.length === 0 ? (
             <div className="text-center py-8 bg-white rounded-2xl border border-dashed border-gray-300">
-                <p className="text-gray-400">હાલ કોઈ કાર્યક્રમ નથી.</p>
+                <p className="text-gray-400">હાલમાં કોઈ નવા કાર્યક્રમ ઉપલબ્ધ નથી.</p>
             </div>
           ) : (
             events.map((event, index) => (
@@ -199,26 +197,26 @@ export default function TrustScreen() {
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">Event</span>
+                    <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">કાર્યક્રમ</span>
                     <h4 className="font-bold text-gray-800 text-lg mt-1">{event.title}</h4>
                   </div>
-                  <div className="bg-gray-50 p-2 rounded-lg text-center min-w-[60px]">
-                      <span className="block text-xs text-gray-400 font-bold uppercase">{new Date(event.date).toLocaleString('default', { month: 'short' })}</span>
+                  <div className="bg-emerald-50 p-2 rounded-lg text-center min-w-[60px] border border-emerald-100">
+                      <span className="block text-xs text-emerald-400 font-bold uppercase">{new Date(event.date).toLocaleString('gu-IN', { month: 'short' })}</span>
                       <span className="block text-xl font-bold text-emerald-600">{new Date(event.date).getDate()}</span>
                   </div>
                 </div>
                 
                 <p className="text-sm text-gray-600 leading-relaxed bg-gray-50 p-3 rounded-xl">{event.description}</p>
                 
-                <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <div className="flex items-center gap-1"><Users size={14}/> {event.attendees_count} જોડાયા</div>
-                    <div className="flex items-center gap-1"><Calendar size={14}/> {event.location}</div>
+                <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                    <div className="flex items-center gap-1 font-bold"><Users size={14} className="text-emerald-500"/> {event.attendees_count} લોકો જોડાયા</div>
+                    <div className="flex items-center gap-1 font-bold"><MapPin size={14} className="text-emerald-500"/> {event.location}</div>
                 </div>
 
                 <button 
                   onClick={() => handleRegister(event)}
                   disabled={regLoading === event.id}
-                  className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition-colors flex justify-center items-center gap-2 shadow-lg shadow-slate-200"
+                  className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 transition-colors flex justify-center items-center gap-2 shadow-lg active:scale-95"
                 >
                   {regLoading === event.id ? <Loader2 className="animate-spin w-5 h-5"/> : 'નામ નોંધાવો (Register)'}
                 </button>
@@ -238,14 +236,14 @@ export default function TrustScreen() {
           <textarea
             value={suggestion}
             onChange={(e) => setSuggestion(e.target.value)}
-            placeholder="તમારા વિચારો અને સૂચન અહીં લખો..."
+            placeholder="તમારા વિચારો અને સૂચનો અહીં લખો..."
             rows={3}
             className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-blue-500 resize-none text-gray-700 placeholder-gray-400"
           />
           <button 
             onClick={handleSuggestionSubmit}
             disabled={submitting}
-            className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl flex items-center justify-center space-x-2 hover:bg-blue-700 transition-all disabled:opacity-70 shadow-lg shadow-blue-200"
+            className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl flex items-center justify-center space-x-2 hover:bg-blue-700 transition-all disabled:opacity-70 shadow-lg active:scale-95"
           >
             {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
             <span>મોકલો (Submit)</span>
