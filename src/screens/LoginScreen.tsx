@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Fingerprint, Smartphone, Loader2, AlertCircle } from 'lucide-react';
+import { Smartphone, Loader2, AlertCircle } from 'lucide-react'; // Fingerprint કાઢી નાખ્યું (વપરાતું નહોતું)
 import { supabase } from '../supabaseClient'; 
 
 export default function LoginScreen() {
@@ -44,6 +44,7 @@ export default function LoginScreen() {
     }
 
     try {
+      // Supabase માટે ફેક ઈમેલ બનાવો
       const fakeEmail = `${formData.mobile}@samaj.app`;
 
       const { data, error } = await supabase.auth.signUp({

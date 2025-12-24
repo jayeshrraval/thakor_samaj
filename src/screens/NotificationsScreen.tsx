@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Bell, Heart, Info, CheckCircle, Loader2 } from 'lucide-react';
+// ✅ સુધારો 1: Briefcase આઈકન ઈમ્પોર્ટ કર્યું
+import { ArrowLeft, Bell, Heart, Info, CheckCircle, Loader2, Briefcase } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../supabaseClient';
@@ -12,19 +13,17 @@ export default function NotificationsScreen() {
 
   useEffect(() => {
     fetchNotifications();
-    markAllAsRead(); // સ્ક્રીન ખોલે એટલે બધું વંચાઈ ગયું ગણાય
+    // markAllAsRead(); // ⚠️ આ અત્યારે બંધ રાખ્યું છે કારણ કે પબ્લિક નોટિફિકેશનમાં બધાનું અલગ સ્ટેટસ ના હોય
   }, []);
 
   const fetchNotifications = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
+      // ✅ સુધારો 2: એડમિન પેનલના ટેબલ સાથે જોડ્યું
       const { data, error } = await supabase
-        .from('notifications')
+        .from('app_notifications') // જૂનું 'notifications' હતું તે બદલ્યું
         .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false }); // નવા ઉપર
+        // .eq('user_id', user.id) // ❌ આ કાઢી નાખ્યું કારણ કે મેસેજ બધા માટે છે
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       setNotifications(data || []);
@@ -35,28 +34,18 @@ export default function NotificationsScreen() {
     }
   };
 
-  const markAllAsRead = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('user_id', user.id);
-    }
-  };
-
-  // નોટિફિકેશન પર ક્લિક કરતા ક્યાં જવું?
+  // ક્લિક કરવાથી ક્યાં જવું?
   const handleNotificationClick = (type: string) => {
-    if (type === 'request') {
-      navigate('/requests');
-    } else if (type === 'profile') {
-      navigate('/profile');
-    }
+    if (type === 'job') navigate('/jobs');       // નોકરી માટે
+    // if (type === 'matrimony') navigate('/matrimony'); // લગ્ન માટે
+    else if (type === 'profile') navigate('/profile');
   };
 
+  // ✅ સુધારો 3: નવા આઈકન ઉમેર્યા
   const getIcon = (type: string) => {
     switch (type) {
-      case 'request': return <Heart className="w-6 h-6 text-pink-500" />;
+      case 'matrimony': return <Heart className="w-6 h-6 text-pink-500 fill-pink-500" />; // ❤️
+      case 'job': return <Briefcase className="w-6 h-6 text-purple-600" />;              // 💼
       case 'welcome': return <CheckCircle className="w-6 h-6 text-green-500" />;
       default: return <Bell className="w-6 h-6 text-blue-500" />;
     }
@@ -64,7 +53,8 @@ export default function NotificationsScreen() {
 
   const getBgColor = (type: string) => {
     switch (type) {
-      case 'request': return 'bg-pink-50';
+      case 'matrimony': return 'bg-pink-50';
+      case 'job': return 'bg-purple-50';
       case 'welcome': return 'bg-green-50';
       default: return 'bg-blue-50';
     }
@@ -72,7 +62,7 @@ export default function NotificationsScreen() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* Header */}
+      {/* Header - સેમ ટુ સેમ રાખ્યું છે */}
       <div className="bg-gradient-to-r from-mint to-teal-500 safe-area-top px-6 py-6">
         <div className="flex items-center space-x-3">
           <button
@@ -116,8 +106,10 @@ export default function NotificationsScreen() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.05 }}
               onClick={() => handleNotificationClick(notification.type)}
-              className={`premium-card p-4 hover:shadow-elevated transition-all active:scale-98 cursor-pointer ${
-                !notification.is_read ? 'border-l-4 border-teal-500 bg-white' : 'bg-gray-50/50'
+              className={`premium-card p-4 hover:shadow-elevated transition-all active:scale-98 cursor-pointer bg-white border-l-4 ${
+                  // બોર્ડર કલર પણ ટાઈપ પ્રમાણે સેટ કર્યો
+                  notification.type === 'matrimony' ? 'border-pink-500' :
+                  notification.type === 'job' ? 'border-purple-500' : 'border-teal-500'
               }`}
             >
               <div className="flex items-start space-x-3">
@@ -135,9 +127,6 @@ export default function NotificationsScreen() {
                     {new Date(notification.created_at).toLocaleDateString('gu-IN')} • {new Date(notification.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                   </p>
                 </div>
-                {!notification.is_read && (
-                    <div className="w-2 h-2 bg-teal-500 rounded-full mt-2"></div>
-                )}
               </div>
             </motion.div>
           ))
