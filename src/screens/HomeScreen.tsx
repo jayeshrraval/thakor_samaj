@@ -35,7 +35,7 @@ export default function HomeScreen() {
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'profiles' },
+        { event: '*', schema: 'public', table: 'users' }, // ✅ અહીં 'users' ટેબલ સેટ કર્યું છે
         () => fetchDashboardData() 
       )
       .subscribe();
@@ -49,9 +49,9 @@ export default function HomeScreen() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // ૧. યુઝર ડેટા (પ્રોફાઇલ ટેબલમાંથી)
+        // ૧. યુઝર ડેટા (પ્રોફાઇલ માટે 'users' ટેબલ વાપર્યું છે)
         const { data: userData } = await supabase
-          .from('profiles')
+          .from('users') // ✅ 'profiles' ને બદલે ફરીથી 'users' કરી દીધું
           .select('full_name, avatar_url')
           .eq('id', user.id)
           .maybeSingle();
@@ -63,7 +63,7 @@ export default function HomeScreen() {
 
         // ૨. કુલ રજીસ્ટર્ડ યુઝર્સ (App Users)
         const { count: userCount } = await supabase
-          .from('profiles')
+          .from('users') // ✅ 'profiles' ને બદલે ફરીથી 'users' કરી દીધું
           .select('*', { count: 'exact', head: true });
 
         // ૩. કુલ મેટ્રિમોની પ્રોફાઈલ્સ
@@ -103,7 +103,7 @@ export default function HomeScreen() {
     { icon: Bot, title: 'જ્ઞાન સહાયક', color: 'from-violet-400 to-purple-500', path: '/ai-assistant' },
   ];
 
-  // ✅ 'રસ દાખવ્યો' કાઢીને નવા આંકડા સેટ કર્યા
+  // ✅ અહીં હવે 'રસ દાખવ્યો' નથી, તેના બદલે રજીસ્ટર્ડ યુઝર અને મેટ્રિમોની આંકડા છે
   const stats = [
     { label: 'કુલ સભ્યો', value: statsData.totalAppUsers.toString(), color: 'text-deep-blue' },
     { label: 'લગ્ન પ્રોફાઈલ', value: statsData.matrimonyProfiles.toString(), color: 'text-mint' },
