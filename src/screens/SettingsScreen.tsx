@@ -13,6 +13,14 @@ export default function SettingsScreen() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   
+  // ✅ ૧. વોટ્સએપ સપોર્ટ ફંક્શન (તમારા નંબર સાથે)
+  const openWhatsAppSupport = () => {
+    const phoneNumber = "919714443758"; 
+    const message = "જય યોગેશ્વર, મને યોગી સમાજ એપમાં સહાય/સપોર્ટની જરૂર છે.";
+    const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank");
+  };
+
   // Settings Groups
   const settingsGroups = [
     {
@@ -36,7 +44,8 @@ export default function SettingsScreen() {
       title: 'Support',
       titleGu: 'સહાય',
       items: [
-        { icon: HelpCircle, label: 'Help & Support', labelGu: 'સહાય અને સપોર્ટ', path: '/about' },
+        // ✅ ૨. અહીં path બદલીને action: 'support' કર્યું છે
+        { icon: HelpCircle, label: 'Help & Support', labelGu: 'સહાય અને સપોર્ટ', action: 'support' },
         { icon: Trash2, label: 'Delete Account', labelGu: 'એકાઉન્ટ ડિલીટ કરો', action: 'delete_account', color: 'text-red-500' },
       ],
     },
@@ -47,6 +56,10 @@ export default function SettingsScreen() {
     if (action === 'password') {
       setShowPasswordModal(true);
     } 
+    // ✅ ૩. સપોર્ટ એક્શન હેન્ડલર
+    else if (action === 'support') {
+      openWhatsAppSupport();
+    }
     else if (action === 'delete_account') {
       handleDeleteAccount();
     }
@@ -84,9 +97,7 @@ export default function SettingsScreen() {
     if (confirmDelete) {
       setLoading(true);
       try {
-        // Call the RPC function we created in SQL
         const { error } = await supabase.rpc('delete_own_account');
-        
         if (error) throw error;
 
         alert('તમારું એકાઉન્ટ ડિલીટ થઈ ગયું છે. બાય બાય! 👋');
