@@ -1,129 +1,110 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Shield, FileText, Info, Lock } from 'lucide-react';
+import { ArrowLeft, Info, ShieldCheck, FileText, Heart, Globe, Mail } from 'lucide-react';
 
 export default function AboutScreen() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'about' | 'privacy' | 'terms'>('about');
+  const [activeTab, setActiveTab] = useState('about');
+
+  const tabs = [
+    { id: 'about', label: 'એપ વિશે' },
+    { id: 'privacy', label: 'પ્રાઈવસી' },
+    { id: 'rules', label: 'નિયમો' },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-10">
+    <div className="min-h-screen bg-gray-50 font-gujarati">
       {/* Header */}
-      <div className="bg-deep-blue p-6 safe-area-top">
-        <div className="flex items-center space-x-3">
-          <button onClick={() => navigate(-1)} className="p-1 bg-white/20 rounded-full">
-            <ArrowLeft className="w-6 h-6 text-white" />
+      <div className="bg-[#075e54] p-4 safe-area-top sticky top-0 z-10 shadow-md">
+        <div className="flex items-center space-x-4">
+          <button onClick={() => navigate(-1)} className="p-1 text-white active:scale-90 transition-transform">
+            <ArrowLeft size={24} />
           </button>
-          <h1 className="text-white font-gujarati font-bold text-xl">માહિતી અને નિયમો</h1>
+          <h1 className="text-white font-bold text-xl">માહિતી અને નિયમો</h1>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-white shadow-sm mb-4 sticky top-0 z-10">
-        <button
-          onClick={() => setActiveTab('about')}
-          className={`flex-1 py-4 font-gujarati font-bold text-center text-sm ${
-            activeTab === 'about' ? 'text-deep-blue border-b-2 border-deep-blue' : 'text-gray-500'
-          }`}
-        >
-          એપ વિશે
-        </button>
-        <button
-          onClick={() => setActiveTab('privacy')}
-          className={`flex-1 py-4 font-gujarati font-bold text-center text-sm ${
-            activeTab === 'privacy' ? 'text-deep-blue border-b-2 border-deep-blue' : 'text-gray-500'
-          }`}
-        >
-          પ્રાઈવસી
-        </button>
-        <button
-          onClick={() => setActiveTab('terms')}
-          className={`flex-1 py-4 font-gujarati font-bold text-center text-sm ${
-            activeTab === 'terms' ? 'text-deep-blue border-b-2 border-deep-blue' : 'text-gray-500'
-          }`}
-        >
-          નિયમો
-        </button>
+      <div className="bg-white flex border-b sticky top-[64px] z-10">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-1 py-4 text-[15px] font-bold transition-all border-b-2 ${
+              activeTab === tab.id 
+                ? 'border-[#075e54] text-[#075e54]' 
+                : 'border-transparent text-gray-400'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* Content */}
-      <div className="px-6 space-y-4">
-        
-        {/* ABOUT APP TAB */}
+      <div className="p-6">
         {activeTab === 'about' && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-            <div className="bg-white p-6 rounded-2xl shadow-sm text-center">
-              <div className="w-20 h-20 bg-deep-blue rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-lg">
-                 <span className="text-3xl">🙏</span>
-              </div>
-              <h2 className="text-xl font-bold text-deep-blue font-gujarati">યોગી સમાજ એપ</h2>
-              <p className="text-gray-500 text-sm">Version 1.0.0</p>
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="flex flex-col items-center py-8 bg-white rounded-3xl shadow-sm border border-gray-100">
+               <img 
+                 src="/icon-192x192.png" 
+                 alt="App Icon" 
+                 className="w-20 h-20 rounded-2xl shadow-lg mb-4 object-cover"
+                 onError={(e) => { e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ctext y='20' font-size='20'%3E🙏%3C/text%3E%3C/svg%3E"; }}
+               />
+               <h2 className="text-xl font-bold text-gray-800">યોગી સમાજ એપ</h2>
+               <p className="text-gray-400 text-sm">Version 1.0.0</p>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl shadow-sm space-y-3">
-              <h3 className="font-bold text-gray-800 font-gujarati flex items-center">
-                <Info className="w-5 h-5 mr-2 text-deep-blue" /> ઉદ્દેશ્ય
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+              <h3 className="font-bold text-[#075e54] mb-3 flex items-center gap-2">
+                <Info size={18} /> અમારો હેતુ
               </h3>
-              <p className="text-gray-600 text-sm font-gujarati leading-relaxed">
-                આ એપ્લિકેશનનો મુખ્ય ઉદ્દેશ્ય આપણા સમાજના તમામ પરિવારોને એક ડિજિટલ પ્લેટફોર્મ પર એકત્રિત કરવાનો છે. 
-                જેથી મેટ્રિમોની, રોજગાર, શિક્ષણ અને સામાજિક પ્રસંગોમાં એકબીજાને મદદરૂપ થઈ શકાય.
+              <p className="text-gray-700 leading-relaxed text-sm">
+                રાવળ યોગી સમાજને એકતાના તાંતણે બાંધવા અને સમાજના દરેક સભ્યને ડિજિટલ યુગમાં જોડાવા માટે આ પ્લેટફોર્મ તૈયાર કરવામાં આવ્યું છે. આ એપ દ્વારા મેટ્રિમોની, રોજગાર અને શિક્ષણ ક્ષેત્રે પરસ્પર મદદ પૂરી પાડવામાં આવશે.
               </p>
             </div>
-
-            <div className="bg-white p-6 rounded-2xl shadow-sm text-center">
-              <p className="text-gray-400 text-xs font-gujarati">Developed with ❤️ by YouWare</p>
-            </div>
-          </motion.div>
+          </div>
         )}
 
-        {/* PRIVACY POLICY TAB */}
         {activeTab === 'privacy' && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-            <div className="bg-white p-6 rounded-2xl shadow-sm space-y-4">
-               <div className="flex items-center space-x-2 text-deep-blue mb-2">
-                 <Lock className="w-6 h-6" />
-                 <h2 className="text-lg font-bold font-gujarati">તમારો ડેટા સુરક્ષિત છે</h2>
-               </div>
-               
-               <div className="space-y-3">
-                 <PolicyItem title="1. ડેટા કલેક્શન" content="અમે ફક્ત તમારું નામ, મોબાઈલ નંબર અને સમાજને લગતી જરૂરી માહિતી જ સેવ કરીએ છીએ." />
-                 <PolicyItem title="2. ફોટા અને ડોક્યુમેન્ટ" content="તમારા ફોટા સુરક્ષિત સર્વર પર સ્ટોર થાય છે અને તમે ઈચ્છો ત્યારે તેને ડિલીટ કરી શકો છો." />
-                 <PolicyItem title="3. ડેટા શેરિંગ" content="તમારો ડેટા કોઈ પણ ત્રીજી પાર્ટી (Third Party) ને વેચવામાં આવતો નથી." />
-               </div>
+          <div className="bg-white p-6 rounded-3xl shadow-sm space-y-4 animate-in slide-in-from-right duration-300">
+            <h2 className="text-lg font-bold text-gray-800 border-b pb-2 flex items-center gap-2">
+               <ShieldCheck size={20} className="text-green-600" /> ડેટા પ્રાઈવસી
+            </h2>
+            <div className="space-y-4 text-sm text-gray-600 leading-relaxed">
+              <p>• અમે યુઝરની પ્રાઈવસીનું પૂરેપૂરું સન્માન કરીએ છીએ.</p>
+              <p>• તમારા ખાનગી ડેટા (મોબાઈલ નંબર, એડ્રેસ) કોઈ પણ તૃતીય પક્ષને વહેંચવામાં આવતા નથી.</p>
+              <p>• એપમાં અપલોડ કરેલી માહિતી માત્ર રજીસ્ટર્ડ સમાજ સભ્યો જ જોઈ શકે છે.</p>
+              <p>• તમે ગમે ત્યારે તમારી પ્રોફાઈલ ડીલીટ કરી શકો છો.</p>
             </div>
-          </motion.div>
+          </div>
         )}
 
-        {/* TERMS & CONDITIONS TAB */}
-        {activeTab === 'terms' && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-             <div className="bg-white p-6 rounded-2xl shadow-sm space-y-4">
-               <div className="flex items-center space-x-2 text-deep-blue mb-2">
-                 <FileText className="w-6 h-6" />
-                 <h2 className="text-lg font-bold font-gujarati">ઉપયોગના નિયમો</h2>
-               </div>
-               
-               <div className="space-y-3">
-                 <PolicyItem title="1. સાચી માહિતી" content="એપમાં રજીસ્ટ્રેશન કરતી વખતે સાચી અને સચોટ માહિતી આપવી ફરજિયાત છે." />
-                 <PolicyItem title="2. સભ્યપદ" content="માત્ર આપણા સમાજના સભ્યો જ આ એપનો ઉપયોગ કરી શકશે. એડમિન પાસે એકાઉન્ટ બ્લોક કરવાનો હક રહેશે." />
-                 <PolicyItem title="3. મર્યાદા" content="કોઈ પણ પ્રકારની અભદ્ર ભાષા કે પોસ્ટ મૂકવા બદલ કાયદેસરની કાર્યવાહી થઈ શકે છે." />
-               </div>
+        {activeTab === 'rules' && (
+          <div className="bg-white p-6 rounded-3xl shadow-sm space-y-4 animate-in slide-in-from-right duration-300">
+            <h2 className="text-lg font-bold text-gray-800 border-b pb-2 flex items-center gap-2">
+               <FileText size={20} className="text-orange-600" /> શરતો અને નિયમો
+            </h2>
+            <div className="space-y-4 text-sm text-gray-600 leading-relaxed">
+              <p>૧. આ એપનો ઉપયોગ માત્ર રાવળ યોગી સમાજના સભ્યો માટે જ છે.</p>
+              <p>૨. મેટ્રિમોની અને અન્ય ફોર્મમાં સાચી માહિતી જ આપવી.</p>
+              <p>૩. કોઈ પણ સભ્ય સાથે અભદ્ર કે અસભ્ય વર્તન કાયદેસરની કાર્યવાહીને પાત્ર બનશે.</p>
+              <p>૪. એડમિન પાસે કોઈ પણ શંકાસ્પદ પ્રોફાઈલને બ્લોક કરવાનો અધિકાર રહેશે.</p>
             </div>
-          </motion.div>
+          </div>
         )}
 
+        {/* ✅ Final Professional Footer */}
+        <div className="mt-16 text-center space-y-2 border-t pt-6">
+            <p className="text-[10px] text-gray-400 font-bold flex items-center justify-center gap-1 uppercase tracking-widest">
+              Developed with <Heart size={10} className="text-red-500 fill-red-500" /> by Raval Yogi Samaj Team
+            </p>
+            <p className="text-[9px] text-gray-300 italic font-gujarati">
+              © 2025 રાવળ યોગી સમાજ. સર્વ હક સ્વાધીન.
+            </p>
+        </div>
       </div>
-    </div>
-  );
-}
-
-// Helper Component
-function PolicyItem({ title, content }: { title: string, content: string }) {
-  return (
-    <div className="pb-3 border-b border-gray-100 last:border-0">
-      <h4 className="font-bold text-gray-800 text-sm font-gujarati mb-1">{title}</h4>
-      <p className="text-gray-500 text-xs font-gujarati leading-relaxed">{content}</p>
     </div>
   );
 }
