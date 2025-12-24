@@ -11,6 +11,7 @@ import { supabase } from '../supabaseClient';
 export default function HomeScreen() {
   const navigate = useNavigate();
   const [userName, setUserName] = useState('Yogi Member');
+  const [userPhoto, setUserPhoto] = useState<string | null>(null); // નવું: ફોટો માટે
   const [loading, setLoading] = useState(true);
   
   const [statsData, setStatsData] = useState({
@@ -27,20 +28,18 @@ export default function HomeScreen() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // બદલાવ: 'users' ની જગ્યાએ 'profiles' માંથી ડેટા લીધો
-        const { data: userProfile } = await supabase
-          .from('profiles')
-          .select('full_name')
+        // 'users' ટેબલમાંથી નામ અને ફોટો લાવો
+        const { data: userData } = await supabase
+          .from('users')
+          .select('full_name, avatar_url')
           .eq('id', user.id)
           .single();
         
-        if (userProfile?.full_name) {
-          setUserName(userProfile.full_name);
-        } else {
-           setUserName(user.user_metadata?.full_name || 'Yogi Member');
+        if (userData) {
+          setUserName(userData.full_name || user.user_metadata?.full_name || 'Yogi Member');
+          setUserPhoto(userData.avatar_url); // ફોટો સેટ કરો
         }
 
-        // બાકીના કાઉન્ટ્સ ફેચ કરવા (જો ટેબલ્સ હશે તો જ ચાલશે)
         const { count: profileCount } = await supabase.from('matrimony_profiles').select('*', { count: 'exact', head: true });
         const { count: interestCount } = await supabase.from('requests').select('*', { count: 'exact', head: true }).eq('from_user_id', user.id); 
         const { count: messageCount } = await supabase.from('messages').select('*', { count: 'exact', head: true }).eq('is_read', false); 
@@ -67,7 +66,7 @@ export default function HomeScreen() {
     { icon: MessageCircle, title: 'મેસેજ', color: 'from-blue-400 to-cyan-500', path: '/messages' },
     { icon: User, title: 'મારી પ્રોફાઈલ', color: 'from-amber-400 to-orange-500', path: '/profile' },
     { icon: CreditCard, title: 'મેમ્બરશીપ ફી', color: 'from-royal-gold to-yellow-600', path: '/subscription' },
-    { icon: Building2, title: 'યોગી સમાજ ટ્રસ્ટ', color: 'from-emerald-400 to-green-500', path: '/trust' },
+    { icon: Building2, title: 'योगી સમાજ ટ્રસ્ટ', color: 'from-emerald-400 to-green-500', path: '/trust' },
     { icon: Bot, title: 'જ્ઞાન સહાયક', color: 'from-violet-400 to-purple-500', path: '/ai-assistant' },
   ];
 
@@ -79,13 +78,20 @@ export default function HomeScreen() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 font-gujarati">
-      {/* Header */}
       <div className="bg-gradient-to-r from-deep-blue to-[#1A8FA3] safe-area-top shadow-lg">
         <div className="px-6 py-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center border border-white/30 shadow-inner">
-                <User className="w-6 h-6 text-white" />
+              {/* સુધારો: પ્રોફાઈલ ફોટો ડિસ્પ્લે */}
+              <div 
+                onClick={() => navigate('/profile')}
+                className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center border border-white/30 shadow-inner overflow-hidden cursor-pointer"
+              >
+                {userPhoto ? (
+                  <img src={userPhoto} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-6 h-6 text-white" />
+                )}
               </div>
               <div>
                 <h1 className="text-white font-bold text-xl tracking-tight">
@@ -104,11 +110,10 @@ export default function HomeScreen() {
         </div>
       </div>
 
-      {/* KRISHNA SARATHI BANNER */}
       <motion.div 
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        onClick={() => navigate('/krishna-chat')}
+        onClick={() => navigate('/ai-assistant')}
         className="mx-6 -mt-6 p-5 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-2xl shadow-xl flex items-center justify-between cursor-pointer border-2 border-white relative overflow-hidden"
       >
         <div className="relative z-10 text-white">
@@ -122,7 +127,6 @@ export default function HomeScreen() {
         </div>
       </motion.div>
 
-      {/* EMERGENCY SOS CARD */}
       <div className="px-6 mt-6">
           <motion.div 
              whileTap={{ scale: 0.95 }}
@@ -142,7 +146,6 @@ export default function HomeScreen() {
           </motion.div>
       </div>
 
-      {/* Feature Grid */}
       <div className="px-6 py-6">
         <div className="grid grid-cols-2 gap-4">
           {featureCards.map((card, index) => {
@@ -168,7 +171,6 @@ export default function HomeScreen() {
         </div>
       </div>
 
-      {/* Stats Table */}
       <div className="px-6 pb-6">
         <div className="bg-white p-6 rounded-[30px] shadow-sm border border-gray-100 flex items-center justify-around">
             {stats.map((stat, index) => (
