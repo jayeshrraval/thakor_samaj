@@ -14,9 +14,10 @@ export default function HomeScreen() {
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   
+  // ✅ નવા સ્ટેટ્સ: એપ યુઝર્સ અને મેટ્રિમોની પ્રોફાઈલ માટે
   const [statsData, setStatsData] = useState({
-    profiles: 0,
-    interests: 0,
+    totalAppUsers: 0,
+    matrimonyProfiles: 0,
     messages: 0
   });
 
@@ -30,10 +31,12 @@ export default function HomeScreen() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'matrimony_profiles' },
-        () => {
-          console.log('Update: New profile detected!');
-          fetchDashboardData(); 
-        }
+        () => fetchDashboardData() 
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'profiles' },
+        () => fetchDashboardData() 
       )
       .subscribe();
 
@@ -46,35 +49,37 @@ export default function HomeScreen() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        // ૧. યુઝર ડેટા (પ્રોફાઇલ ટેબલમાંથી)
         const { data: userData } = await supabase
-          .from('users')
+          .from('profiles')
           .select('full_name, avatar_url')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
         
         if (userData) {
           setUserName(userData.full_name || user.user_metadata?.full_name || 'Yogi Member');
           setUserPhoto(userData.avatar_url);
         }
 
-        // લાઈવ કાઉન્ટ ખેંચો
+        // ૨. કુલ રજીસ્ટર્ડ યુઝર્સ (App Users)
+        const { count: userCount } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true });
+
+        // ૩. કુલ મેટ્રિમોની પ્રોફાઈલ્સ
         const { count: profileCount } = await supabase
           .from('matrimony_profiles')
           .select('*', { count: 'exact', head: true });
-          
-        const { count: interestCount } = await supabase
-          .from('requests')
-          .select('*', { count: 'exact', head: true })
-          .eq('from_user_id', user.id); 
 
+        // ૪. વણવંચાયેલા મેસેજ
         const { count: messageCount } = await supabase
           .from('messages')
           .select('*', { count: 'exact', head: true })
           .eq('is_read', false); 
 
         setStatsData({
-            profiles: profileCount || 0,
-            interests: interestCount || 0,
+            totalAppUsers: userCount || 0,
+            matrimonyProfiles: profileCount || 0,
             messages: messageCount || 0
         });
       }
@@ -98,10 +103,11 @@ export default function HomeScreen() {
     { icon: Bot, title: 'જ્ઞાન સહાયક', color: 'from-violet-400 to-purple-500', path: '/ai-assistant' },
   ];
 
+  // ✅ 'રસ દાખવ્યો' કાઢીને નવા આંકડા સેટ કર્યા
   const stats = [
-    { label: 'કુલ પ્રોફાઈલ', value: statsData.profiles.toString(), color: 'text-mint' },
-    { label: 'રસ દાખવ્યો', value: statsData.interests.toString(), color: 'text-royal-gold' },
-    { label: 'મેસેજ', value: statsData.messages.toString(), color: 'text-deep-blue' },
+    { label: 'કુલ સભ્યો', value: statsData.totalAppUsers.toString(), color: 'text-deep-blue' },
+    { label: 'લગ્ન પ્રોફાઈલ', value: statsData.matrimonyProfiles.toString(), color: 'text-mint' },
+    { label: 'મેસેજ', value: statsData.messages.toString(), color: 'text-rose-600' },
   ];
 
   return (
@@ -201,9 +207,9 @@ export default function HomeScreen() {
       <div className="px-6 pb-6">
         <div className="bg-white p-6 rounded-[30px] shadow-sm border border-gray-100 flex items-center justify-around">
             {stats.map((stat, index) => (
-              <div key={index} className="text-center">
+              <div key={index} className="text-center border-r last:border-0 border-gray-100 flex-1">
                 <p className={`text-2xl font-black ${stat.color}`}>{stat.value}</p>
-                <p className="text-gray-500 text-[10px] font-bold mt-1 uppercase tracking-wider">{stat.label}</p>
+                <p className="text-gray-500 text-[9px] font-bold mt-1 uppercase tracking-wider">{stat.label}</p>
               </div>
             ))}
         </div>
