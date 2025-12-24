@@ -11,7 +11,7 @@ import { supabase } from '../supabaseClient';
 export default function HomeScreen() {
   const navigate = useNavigate();
   const [userName, setUserName] = useState('Yogi Member');
-  const [userPhoto, setUserPhoto] = useState<string | null>(null); // નવું: ફોટો માટે
+  const [userPhoto, setUserPhoto] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   
   const [statsData, setStatsData] = useState({
@@ -28,7 +28,6 @@ export default function HomeScreen() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // 'users' ટેબલમાંથી નામ અને ફોટો લાવો
         const { data: userData } = await supabase
           .from('users')
           .select('full_name, avatar_url')
@@ -37,7 +36,7 @@ export default function HomeScreen() {
         
         if (userData) {
           setUserName(userData.full_name || user.user_metadata?.full_name || 'Yogi Member');
-          setUserPhoto(userData.avatar_url); // ફોટો સેટ કરો
+          setUserPhoto(userData.avatar_url);
         }
 
         const { count: profileCount } = await supabase.from('matrimony_profiles').select('*', { count: 'exact', head: true });
@@ -66,7 +65,8 @@ export default function HomeScreen() {
     { icon: MessageCircle, title: 'મેસેજ', color: 'from-blue-400 to-cyan-500', path: '/messages' },
     { icon: User, title: 'મારી પ્રોફાઈલ', color: 'from-amber-400 to-orange-500', path: '/profile' },
     { icon: CreditCard, title: 'મેમ્બરશીપ ફી', color: 'from-royal-gold to-yellow-600', path: '/subscription' },
-    { icon: Building2, title: 'योगી સમાજ ટ્રસ્ટ', color: 'from-emerald-400 to-green-500', path: '/trust' },
+    { icon: Building2, title: 'યોગી સમાજ ટ્રસ્ટ', color: 'from-emerald-400 to-green-500', path: '/trust' },
+    // ✅ જ્ઞાન સહાયક માટેનો સાચો પાથ
     { icon: Bot, title: 'જ્ઞાન સહાયક', color: 'from-violet-400 to-purple-500', path: '/ai-assistant' },
   ];
 
@@ -82,7 +82,6 @@ export default function HomeScreen() {
         <div className="px-6 py-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
-              {/* સુધારો: પ્રોફાઈલ ફોટો ડિસ્પ્લે */}
               <div 
                 onClick={() => navigate('/profile')}
                 className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center border border-white/30 shadow-inner overflow-hidden cursor-pointer"
@@ -110,10 +109,11 @@ export default function HomeScreen() {
         </div>
       </div>
 
+      {/* KRISHNA SARATHI BANNER - ✅ હવે સાચો પાથ /krishna-chat સેટ કર્યો છે */}
       <motion.div 
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        onClick={() => navigate('/ai-assistant')}
+        onClick={() => navigate('/krishna-chat')}
         className="mx-6 -mt-6 p-5 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-2xl shadow-xl flex items-center justify-between cursor-pointer border-2 border-white relative overflow-hidden"
       >
         <div className="relative z-10 text-white">
