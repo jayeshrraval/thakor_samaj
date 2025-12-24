@@ -1,4 +1,4 @@
-package com.youware.app;
+package com.yogisamaj.sambandh;
 
 import com.getcapacitor.BridgeActivity;
 
