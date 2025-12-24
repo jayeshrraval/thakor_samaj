@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Heart, Loader2, User, MapPin, Briefcase, GraduationCap } from 'lucide-react';
+import { Search, Heart, Loader2, User, MapPin, Briefcase, GraduationCap, Camera } from 'lucide-react';
 import { motion } from 'framer-motion';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../supabaseClient'; 
@@ -11,6 +11,7 @@ export default function MatrimonyScreen() {
   const [profiles, setProfiles] = useState<any[]>([]);
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -37,8 +38,11 @@ export default function MatrimonyScreen() {
   const fetchProfiles = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
+    
     // પોતાની પ્રોફાઇલ સિવાયની બધી પ્રોફાઇલ બતાવો
     let query = supabase.from('matrimony_profiles').select('*').order('created_at', { ascending: false });
+    
+    // જો તમે ઇચ્છો કે બધાની પ્રોફાઇલ દેખાય (પોતાની પણ), તો નીચેની લાઇન કાઢી નાખવી
     if (user) query = query.neq('user_id', user.id);
     
     const { data, error } = await query;
@@ -51,6 +55,40 @@ export default function MatrimonyScreen() {
     if (user) {
       const { data } = await supabase.from('matrimony_profiles').select('*').eq('user_id', user.id).maybeSingle();
       if (data) setFormData({ ...data, age: data.age?.toString() || '' });
+    }
+  };
+
+  // ✅ ફોટો અપલોડ કરવાનું લોજિક
+  const handleImageUpload = async (event: any) => {
+    try {
+      setUploading(true);
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+      const filePath = `matrimony/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars') // ખાતરી કરો કે આ બકેટ પબ્લિક છે
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      setFormData(prev => ({ ...prev, image_url: publicUrl }));
+      alert('ફોટો અપલોડ થઈ ગયો! હવે પ્રોફાઇલ સેવ કરો.');
+
+    } catch (error: any) {
+      alert('અપલોડમાં ભૂલ: ' + error.message);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -87,7 +125,7 @@ export default function MatrimonyScreen() {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border-b border-gray-200 px-6 pt-4 sticky top-0 z-20 shadow-sm overflow-x-auto whitespace-nowrap scrollbar-hide">
+      <div className="bg-white border-b border-gray-200 px-6 pt-4 sticky top-0 z-20 shadow-sm overflow-x-auto whitespace-nowrap">
         <div className="flex space-x-6">
           {[
             { id: 'list', label: 'પ્રોફાઈલ લિસ્ટ' },
@@ -113,16 +151,16 @@ export default function MatrimonyScreen() {
             {loading ? (
                 <Loader2 className="animate-spin mx-auto mt-10 text-pink-500" />
             ) : profiles.length === 0 ? (
-                <p className="text-center text-gray-500 mt-10">કોઈ પ્રોફાઇલ મળી નથી.</p>
+                <p className="text-center text-gray-400 mt-10 font-bold">કોઈ પ્રોફાઇલ મળી નથી.</p>
             ) : (
                 profiles.map((profile) => (
                     <motion.div 
                         key={profile.id} 
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="bg-white p-5 rounded-[30px] shadow-sm border border-gray-100 flex gap-4 items-center"
+                        className="bg-white p-4 rounded-[30px] shadow-sm border border-gray-100 flex gap-4 items-center"
                     >
-                       <div className="w-20 h-20 rounded-2xl bg-pink-50 flex items-center justify-center shrink-0 border border-pink-100 overflow-hidden">
+                       <div className="w-20 h-20 rounded-2xl bg-pink-50 flex items-center justify-center shrink-0 border border-pink-100 overflow-hidden shadow-inner">
                            {profile.image_url ? (
                                <img src={profile.image_url} className="w-full h-full object-cover" />
                            ) : (
@@ -130,12 +168,12 @@ export default function MatrimonyScreen() {
                            )}
                        </div>
                        <div className="flex-1">
-                          <h3 className="font-bold text-gray-800 text-lg">{profile.full_name}</h3>
-                          <p className="text-pink-600 text-xs font-bold">{profile.age} વર્ષ | {profile.village}</p>
+                          <h3 className="font-bold text-gray-800 text-lg leading-tight">{profile.full_name}</h3>
+                          <p className="text-pink-600 text-xs font-bold mt-1 bg-pink-50 w-fit px-2 py-0.5 rounded-full">{profile.age} વર્ષ | {profile.village}</p>
                           <div className="mt-2 flex gap-2">
                              <button 
                                 onClick={() => { setSelectedProfile(profile); setActiveTab('detail'); }}
-                                className="bg-pink-50 text-pink-600 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-tighter"
+                                className="bg-pink-600 text-white px-5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm active:scale-90 transition-all"
                              >
                                 વિગત જુઓ
                              </button>
@@ -153,10 +191,14 @@ export default function MatrimonyScreen() {
                     <div className="bg-white rounded-[40px] p-6 shadow-xl border border-pink-50">
                         <div className="text-center mb-6">
                             <div className="w-32 h-32 bg-pink-50 rounded-full mx-auto mb-4 border-4 border-white shadow-lg overflow-hidden flex items-center justify-center">
-                                <User className="text-pink-200 w-16 h-16" />
+                                {selectedProfile.image_url ? (
+                                   <img src={selectedProfile.image_url} className="w-full h-full object-cover" />
+                                ) : (
+                                   <User className="text-pink-200 w-16 h-16" />
+                                )}
                             </div>
                             <h2 className="text-2xl font-black text-gray-800">{selectedProfile.full_name}</h2>
-                            <p className="text-pink-500 font-bold">{selectedProfile.peta_atak}</p>
+                            <p className="text-pink-500 font-bold uppercase text-xs tracking-widest">{selectedProfile.peta_atak}</p>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-4 border-t pt-6">
@@ -173,6 +215,25 @@ export default function MatrimonyScreen() {
         {activeTab === 'myprofile' && (
           <div className="space-y-4">
             <div className="bg-white p-6 rounded-[35px] shadow-sm border border-gray-100 space-y-4">
+              
+              {/* ✅ ફોટો અપલોડ સેક્શન */}
+              <div className="flex flex-col items-center mb-6">
+                <div className="relative group">
+                  <div className="w-32 h-32 rounded-3xl bg-gray-50 border-2 border-dashed border-pink-200 overflow-hidden flex items-center justify-center shadow-inner">
+                    {formData.image_url ? (
+                      <img src={formData.image_url} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-12 h-12 text-pink-100" />
+                    )}
+                  </div>
+                  <label className="absolute -bottom-2 -right-2 bg-pink-600 p-3 rounded-2xl shadow-lg cursor-pointer active:scale-90 transition-transform">
+                    {uploading ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Camera className="w-5 h-5 text-white" />}
+                    <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                  </label>
+                </div>
+                <p className="text-[10px] font-black text-gray-400 mt-4 uppercase tracking-widest">તમારો સારો ફોટો અપલોડ કરો</p>
+              </div>
+
               <h3 className="font-bold text-gray-800 mb-4 border-b pb-2">વ્યક્તિગત માહિતી</h3>
               {[
                 { label: 'પૂરું નામ', field: 'full_name' },
@@ -204,7 +265,7 @@ export default function MatrimonyScreen() {
                 <span className="text-sm font-bold text-pink-700">કુંડળી ઉપલબ્ધ છે?</span>
                 <input 
                   type="checkbox" 
-                  className="w-6 h-6 accent-pink-600"
+                  className="w-6 h-6 accent-pink-600 rounded"
                   checked={formData.kundali_available}
                   onChange={(e) => setFormData({...formData, kundali_available: e.target.checked})}
                 />
@@ -212,10 +273,10 @@ export default function MatrimonyScreen() {
 
               <button 
                 onClick={handleSaveProfile}
-                disabled={loading}
-                className="w-full bg-pink-600 text-white font-black py-4 rounded-[20px] shadow-lg active:scale-95 transition-all mt-6 uppercase"
+                disabled={loading || uploading}
+                className="w-full bg-pink-600 text-white font-black py-4 rounded-[20px] shadow-lg active:scale-95 transition-all mt-6 uppercase tracking-widest disabled:opacity-50"
               >
-                {loading ? <Loader2 className="animate-spin mx-auto" /> : 'માહિતી સેવ કરો'}
+                {loading ? <Loader2 className="animate-spin mx-auto text-white" /> : 'પ્રોફાઇલ સેવ કરો'}
               </button>
             </div>
           </div>
