@@ -52,7 +52,7 @@ export default function AboutScreen() {
                  className="w-20 h-20 rounded-2xl shadow-lg mb-4 object-cover"
                  onError={(e) => { e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ctext y='20' font-size='20'%3E🙏%3C/text%3E%3C/svg%3E"; }}
                />
-               <h2 className="text-xl font-bold text-gray-800">યોગી સમાજ એપ</h2>
+               <h2 className="text-xl font-bold text-gray-800">યોગી સમાજ સંબંધ</h2>
                <p className="text-gray-400 text-sm">Version 1.0.0</p>
             </div>
 
