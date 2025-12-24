@@ -103,6 +103,7 @@ export default function TrustScreen() {
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.marksheet_url) return alert("કૃપા કરીને માર્કશીટનો ફોટો અપલોડ કરો.");
+    if (formData.mobile.length < 10) return alert("કૃપા કરીને સાચો મોબાઈલ નંબર નાખો.");
     
     setRegLoading(true);
     try {
@@ -122,7 +123,7 @@ export default function TrustScreen() {
                 percentage: formData.percentage,
                 passing_year: formData.passing_year,
                 marksheet_url: formData.marksheet_url,
-                mobile: fromData.mobile,
+                mobile: formData.mobile, // ફિક્સ કર્યું: formData.mobile
                 event_type: selectedEvent?.title,
                 status: 'Pending'
             }
@@ -230,7 +231,7 @@ export default function TrustScreen() {
         </div>
       </div>
 
-      {/* ✅ નવું: વિદ્યાર્થી સન્માન રજીસ્ટ્રેશન ફોર્મ (Modal) */}
+      {/* ✅ વિદ્યાર્થી સન્માન રજીસ્ટ્રેશન ફોર્મ (Modal) */}
       <AnimatePresence>
         {showRegModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
@@ -255,6 +256,13 @@ export default function TrustScreen() {
                     <input required placeholder="ગામ" className="p-3 bg-gray-50 rounded-xl border-0 focus:ring-2 focus:ring-emerald-500" value={formData.village} onChange={e => setFormData({...formData, village: e.target.value})}/>
                     <input required placeholder="તાલુકો" className="p-3 bg-gray-50 rounded-xl border-0 focus:ring-2 focus:ring-emerald-500" value={formData.taluko} onChange={e => setFormData({...formData, taluko: e.target.value})}/>
                     <input required placeholder="જિલ્લો" className="p-3 bg-gray-50 rounded-xl border-0 focus:ring-2 focus:ring-emerald-500" value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})}/>
+                </div>
+
+                {/* ✅ મોબાઈલ નંબર ઇનપુટ ફિલ્ડ ઉમેર્યું */}
+                <div className="relative">
+                  <Phone size={18} className="absolute left-4 top-4 text-gray-400" />
+                  <input required type="tel" maxLength={10} placeholder="મોબાઈલ નંબર" className="w-full p-4 pl-12 bg-gray-50 rounded-2xl border-0 focus:ring-2 focus:ring-emerald-500"
+                  value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value.replace(/\D/g, '')})}/>
                 </div>
 
                 <input required placeholder="સ્કૂલ/કોલેજ નું નામ" className="w-full p-4 bg-gray-50 rounded-2xl border-0 focus:ring-2 focus:ring-emerald-500"
