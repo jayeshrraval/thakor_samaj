@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './supabaseClient';
+import { CapacitorUpdater } from '@capgo/capacitor-updater'; // 1. આ લાઈન ઉમેરી
 
 // --- Auth & Main ---
 import SplashScreen from './screens/SplashScreen';
@@ -53,6 +54,9 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
+    // 2. Capgo ને જણાવો કે એપ લોડ થઈ ગઈ છે (OTA માટે ફરજિયાત)
+    CapacitorUpdater.notifyAppReady();
+
     // સેશન ચેક કરો
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);

@@ -11,5 +11,9 @@ export default defineConfig({
   },
   build: {
     sourcemap: true,
+    rollupOptions: {
+      // આ લાઈન પેલી Build Failure એરર સોલ્વ કરી દેશે
+      external: [/capacitor-cli\.d\.ts/], 
+    },
   },
 });
