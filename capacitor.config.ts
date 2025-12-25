@@ -1,13 +1,13 @@
-import type { CapacitorConfig } from '@capacitor/cli';
-
-const config: CapacitorConfig = {
+const config = {
   appId: 'com.yogisamajsambandh.app',
   appName: 'Yogi Samaj Sambandh',
   webDir: 'dist',
+  server: {
+    androidScheme: 'https'
+  },
   plugins: {
     CapacitorUpdater: {
-      autoUpdate: true,
-      statsUrl: 'https://api.capgo.app/stats',
+      autoUpdate: false
     }
   }
 };

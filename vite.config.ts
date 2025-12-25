@@ -3,22 +3,45 @@ import react from "@vitejs/plugin-react";
 import { youwareVitePlugin } from "@youware/vite-plugin-react";
 
 export default defineConfig({
-  // ક્રમ બદલ્યો: React પહેલા, પછી Youware
   plugins: [react(), youwareVitePlugin()],
   base: './', 
-  resolve: {
-    alias: {
-      // આ લાઈન જાદુ કરશે: જો ક્યાંય પણ capacitor-cli.d.ts દેખાશે, 
-      // તો એને એક ખાલી મોડ્યુલ સાથે બદલી નાખશે.
-      'capacitor-cli.d.ts': 'id' 
-    }
-  },
   build: {
     outDir: 'dist',
+    target: 'es2015',
+    assetsDir: 'assets',
     sourcemap: false,
     rollupOptions: {
-      // બિલ્ડમાંથી સદંતર બહાર
-      external: ['capacitor-cli.d.ts'],
-    },
+      external: [
+        '@capacitor/cli',
+        'path',
+        'fs',
+        'https',
+        'crypto',
+        'util',
+        'os',
+        'child_process',
+        'fs/promises',
+        'node:fs',
+        'node:path',
+        'node:events',
+        'node:child_process',
+        'node:process',
+        'node:url'
+      ],
+      output: {
+        format: 'umd', 
+        entryFileNames: `assets/[name].js`,
+        chunkFileNames: `assets/[name].js`,
+        assetFileNames: `assets/[name].[ext]`,
+        globals: {
+          '@capacitor/cli': 'CapacitorCLI'
+        }
+      }
+    }
   },
+  resolve: {
+    alias: {
+      'capacitor-cli.d.ts': 'id' 
+    }
+  }
 });
