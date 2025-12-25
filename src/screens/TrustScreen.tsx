@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Users, Heart, PartyPopper, MessageSquare, Send, Loader2, MapPin, X, User, Phone, Upload, GraduationCap } from 'lucide-react';
+import { Calendar, Users, Heart, PartyPopper, MessageSquare, Send, Loader2, MapPin, X, User, Phone, Upload, GraduationCap, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../supabaseClient'; 
 
-// TypeScript Interfaces (ડેટા ના પ્રકાર નક્કી કર્યા)
+// TypeScript Interfaces
 interface TrustEvent {
   id: string;
   title: string;
@@ -14,18 +14,19 @@ interface TrustEvent {
   attendees_count: number;
 }
 
-interface UserProfile {
-  full_name: string;
-  mobile: string;
-  village: string;
-}
-
 export default function TrustScreen() {
   const [events, setEvents] = useState<TrustEvent[]>([]);
   const [suggestion, setSuggestion] = useState('');
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [regLoading, setRegLoading] = useState(false);
+
+  // ✅ નવું: ફંડના આંકડા માટેનું સ્ટેટ
+  const [fundStats, setFundStats] = useState({
+    total_fund: '...',
+    total_donors: '...',
+    upcoming_events: '...'
+  });
 
   // ✅ નવું: રજીસ્ટ્રેશન ફોર્મ અને અપલોડ માટેના સ્ટેટ્સ
   const [showRegModal, setShowRegModal] = useState(false);
@@ -54,7 +55,28 @@ export default function TrustScreen() {
 
   useEffect(() => {
     fetchEvents();
+    fetchFundStats(); // ✅ ફંડનો ડેટા લાવવા કોલ કર્યું
   }, []);
+
+  // ✅ ફંડના આંકડા લાવવાનું ફંક્શન
+  const fetchFundStats = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('fund_stats')
+        .select('*')
+        .single();
+
+      if (data) {
+        setFundStats({
+          total_fund: data.total_fund,
+          total_donors: data.total_donors,
+          upcoming_events: data.upcoming_events
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
 
   const fetchEvents = async () => {
     try {
@@ -72,7 +94,7 @@ export default function TrustScreen() {
     }
   };
 
-  // ✅ માર્કશીટ અપલોડ કરવાનું પાવરફુલ લોજિક
+  // ✅ માર્કશીટ અપલોડ કરવાનું લોજિક
   const handleFileUpload = async (e: any) => {
     try {
       setUploading(true);
@@ -123,7 +145,7 @@ export default function TrustScreen() {
                 percentage: formData.percentage,
                 passing_year: formData.passing_year,
                 marksheet_url: formData.marksheet_url,
-                mobile: formData.mobile, // ફિક્સ કર્યું: formData.mobile
+                mobile: formData.mobile,
                 event_type: selectedEvent?.title,
                 status: 'Pending'
             }
@@ -168,20 +190,52 @@ export default function TrustScreen() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-emerald-500 to-green-500 pt-12 px-6 py-6 rounded-b-[2rem] shadow-lg">
-        <h1 className="text-white font-bold text-2xl">યોગી સમાજ ટ્રસ્ટ</h1>
-        <p className="text-white/80 text-sm">સમાજ સેવા અને વિકાસ</p>
+      {/* Header - થોડી હાઈટ વધારી જેથી બોક્સ ઓવરલેપ થાય */}
+      <div className="bg-gradient-to-r from-emerald-500 to-green-500 pt-12 px-6 pb-20 rounded-b-[2.5rem] shadow-lg">
+        <h1 className="text-white font-bold text-2xl font-gujarati">યોગી સમાજ ટ્રસ્ટ</h1>
+        <p className="text-white/80 text-sm font-gujarati">સમાજ સેવા અને વિકાસ</p>
       </div>
 
-      <div className="px-6 -mt-8 space-y-6">
-        {/* Trust Balance Card */}
-        <div className="p-8 bg-gradient-to-br from-yellow-500 to-yellow-600 text-white overflow-hidden relative shadow-xl rounded-2xl border border-white/20">
-            <p className="text-white/80 text-sm mb-2 font-medium">Trust Balance</p>
-            <h2 className="text-4xl font-bold mb-4 drop-shadow-md">₹0</h2>
-            <p className="text-white/90 text-sm bg-black/10 inline-block px-3 py-1 rounded-full backdrop-blur-sm">સમાજ વિકાસ ફંડ</p>
-        </div>
+      {/* ✅ સુધારેલું ડાયનેમિક ફંડ બોક્સ (નાનું અને નીચે ખસેડેલું) */}
+      <div className="px-6 -mt-12 relative z-10">
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }} 
+          animate={{ y: 0, opacity: 1 }} 
+          className="bg-white rounded-3xl shadow-lg p-5 border border-gray-100"
+        >
+          {/* Box Header */}
+          <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-2">
+            <h2 className="text-gray-800 font-bold font-gujarati flex items-center gap-2">
+              <Shield className="w-5 h-5 text-yellow-500 fill-current" />
+              સમાજ વિકાસ ફંડ
+            </h2>
+          </div>
 
+          {/* 3 Columns Grid */}
+          <div className="grid grid-cols-3 gap-2 text-center divide-x divide-gray-100">
+            {/* Fund */}
+            <div className="px-1">
+              <p className="text-emerald-600 font-bold text-lg font-gujarati">{fundStats.total_fund}</p>
+              <p className="text-gray-400 text-[10px] font-gujarati mt-1">કુલ ફંડ</p>
+            </div>
+
+            {/* Donors */}
+            <div className="px-1">
+              <p className="text-blue-600 font-bold text-lg font-gujarati">{fundStats.total_donors}</p>
+              <p className="text-gray-400 text-[10px] font-gujarati mt-1">દાતાઓ</p>
+            </div>
+
+            {/* Events */}
+            <div className="px-1">
+              <p className="text-purple-600 font-bold text-lg font-gujarati">{fundStats.upcoming_events}</p>
+              <p className="text-gray-400 text-[10px] font-gujarati mt-1">કાર્યક્રમો</p>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      <div className="px-6 mt-6 space-y-6">
+        
         {/* Section Cards */}
         <div className="grid grid-cols-2 gap-4">
           {sections.map((section, index) => (
@@ -189,14 +243,14 @@ export default function TrustScreen() {
                 <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${section.color} flex items-center justify-center mb-3 shadow-md`}>
                   <section.icon className="w-6 h-6 text-white" strokeWidth={2.5} />
                 </div>
-                <h3 className="font-bold text-gray-700 text-sm">{section.title}</h3>
+                <h3 className="font-bold text-gray-700 text-sm font-gujarati">{section.title}</h3>
             </div>
           ))}
         </div>
 
         {/* Upcoming Events */}
         <div className="space-y-4">
-          <h3 className="font-bold text-gray-800 text-lg px-2 border-l-4 border-emerald-500 pl-3">આગામી કાર્યક્રમો</h3>
+          <h3 className="font-bold text-gray-800 text-lg px-2 border-l-4 border-emerald-500 pl-3 font-gujarati">આગામી કાર્યક્રમો</h3>
           {loadingEvents ? (
             <div className="flex justify-center py-8"><Loader2 className="w-8 h-8 text-emerald-500 animate-spin" /></div>
           ) : events.map((event) => (
@@ -204,34 +258,34 @@ export default function TrustScreen() {
                 <div className="flex justify-between items-start">
                   <div>
                     <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">Event</span>
-                    <h4 className="font-bold text-gray-800 text-lg mt-1">{event.title}</h4>
+                    <h4 className="font-bold text-gray-800 text-lg mt-1 font-gujarati">{event.title}</h4>
                   </div>
                   <div className="bg-gray-50 p-2 rounded-lg text-center min-w-[60px]">
                       <span className="block text-xs text-gray-400 font-bold uppercase">{new Date(event.date).toLocaleString('default', { month: 'short' })}</span>
                       <span className="block text-xl font-bold text-emerald-600">{new Date(event.date).getDate()}</span>
                   </div>
                 </div>
-                <p className="text-sm text-gray-600 leading-relaxed bg-gray-50 p-3 rounded-xl">{event.description}</p>
-                <div className="flex items-center gap-4 text-sm text-gray-500">
+                <p className="text-sm text-gray-600 leading-relaxed bg-gray-50 p-3 rounded-xl font-gujarati">{event.description}</p>
+                <div className="flex items-center gap-4 text-sm text-gray-500 font-gujarati">
                     <div className="flex items-center gap-1"><Users size={14}/> {event.attendees_count} જોડાયા</div>
                     <div className="flex items-center gap-1"><MapPin size={14}/> {event.location}</div>
                 </div>
-                <button onClick={() => { setSelectedEvent(event); setShowRegModal(true); }} className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition-colors shadow-lg">નામ નોંધાવો (Register)</button>
+                <button onClick={() => { setSelectedEvent(event); setShowRegModal(true); }} className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition-colors shadow-lg font-gujarati">નામ નોંધાવો (Register)</button>
             </div>
           ))}
         </div>
 
         {/* Suggestion Box */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
-          <h3 className="font-bold text-gray-800 flex items-center gap-2"><MessageSquare className="text-blue-600" /> સમાજના યુવાનોનું મંતવ્ય</h3>
-          <textarea value={suggestion} onChange={(e) => setSuggestion(e.target.value)} placeholder="તમારા વિચારો લખો..." rows={3} className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-blue-500 text-gray-700" />
-          <button onClick={handleSuggestionSubmit} disabled={submitting} className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl flex items-center justify-center space-x-2 shadow-lg">
+          <h3 className="font-bold text-gray-800 flex items-center gap-2 font-gujarati"><MessageSquare className="text-blue-600" /> સમાજના યુવાનોનું મંતવ્ય</h3>
+          <textarea value={suggestion} onChange={(e) => setSuggestion(e.target.value)} placeholder="તમારા વિચારો લખો..." rows={3} className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-blue-500 text-gray-700 font-gujarati" />
+          <button onClick={handleSuggestionSubmit} disabled={submitting} className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl flex items-center justify-center space-x-2 shadow-lg font-gujarati">
             {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />} <span>મોકલો</span>
           </button>
         </div>
       </div>
 
-      {/* ✅ વિદ્યાર્થી સન્માન રજીસ્ટ્રેશન ફોર્મ (Modal) */}
+      {/* ✅ વિદ્યાર્થી સન્માન રજીસ્ટ્રેશન ફોર્મ (Modal) - આ કોડ જેવો હતો તેવો જ છે */}
       <AnimatePresence>
         {showRegModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
@@ -239,9 +293,9 @@ export default function TrustScreen() {
               className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl relative my-8"
             >
               <button onClick={() => setShowRegModal(false)} className="absolute top-6 right-6 p-2 bg-gray-100 rounded-full text-gray-500"><X size={20}/></button>
-              <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">વિદ્યાર્થી રજીસ્ટ્રેશન</h2>
+              <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center font-gujarati">વિદ્યાર્થી રજીસ્ટ્રેશન</h2>
 
-              <form onSubmit={handleRegisterSubmit} className="space-y-4">
+              <form onSubmit={handleRegisterSubmit} className="space-y-4 font-gujarati">
                 <input required placeholder="વિદ્યાર્થીનું પૂરું નામ" className="w-full p-4 bg-gray-50 rounded-2xl border-0 focus:ring-2 focus:ring-emerald-500" 
                 value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})}/>
                 
@@ -258,7 +312,6 @@ export default function TrustScreen() {
                     <input required placeholder="જિલ્લો" className="p-3 bg-gray-50 rounded-xl border-0 focus:ring-2 focus:ring-emerald-500" value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})}/>
                 </div>
 
-                {/* ✅ મોબાઈલ નંબર ઇનપુટ ફિલ્ડ ઉમેર્યું */}
                 <div className="relative">
                   <Phone size={18} className="absolute left-4 top-4 text-gray-400" />
                   <input required type="tel" maxLength={10} placeholder="મોબાઈલ નંબર" className="w-full p-4 pl-12 bg-gray-50 rounded-2xl border-0 focus:ring-2 focus:ring-emerald-500"
@@ -275,7 +328,6 @@ export default function TrustScreen() {
                     value={formData.passing_year} onChange={e => setFormData({...formData, passing_year: e.target.value})}/>
                 </div>
 
-                {/* માર્કશીટ અપલોડ */}
                 <div className="border-2 border-dashed border-gray-200 rounded-2xl p-4 text-center bg-gray-50">
                     <input type="file" id="marksheet" accept="image/*" className="hidden" onChange={handleFileUpload} />
                     <label htmlFor="marksheet" className="cursor-pointer flex flex-col items-center gap-2">
