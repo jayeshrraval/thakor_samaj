@@ -1,5 +1,4 @@
-node_modules
+node_modules/
+dist/
+android/app/build/
 .env
-dist
-.DS_Store
-*.local
