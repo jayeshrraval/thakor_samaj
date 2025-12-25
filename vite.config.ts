@@ -3,23 +3,22 @@ import react from "@vitejs/plugin-react";
 import { youwareVitePlugin } from "@youware/vite-plugin-react";
 
 export default defineConfig({
-  plugins: [youwareVitePlugin(), react()],
-  base: './', // Netlify માટે આ પાથ સૌથી સેફ છે
-  server: {
-    host: "127.0.0.1",
-    port: 5173,
+  // ક્રમ બદલ્યો: React પહેલા, પછી Youware
+  plugins: [react(), youwareVitePlugin()],
+  base: './', 
+  resolve: {
+    alias: {
+      // આ લાઈન જાદુ કરશે: જો ક્યાંય પણ capacitor-cli.d.ts દેખાશે, 
+      // તો એને એક ખાલી મોડ્યુલ સાથે બદલી નાખશે.
+      'capacitor-cli.d.ts': 'id' 
+    }
   },
   build: {
-    sourcemap: false, 
+    outDir: 'dist',
+    sourcemap: false,
     rollupOptions: {
-      // આ લાઈન Vite ને કહેશે કે આ ફાઈલને ઈગ્નોર કર
+      // બિલ્ડમાંથી સદંતર બહાર
       external: ['capacitor-cli.d.ts'],
-      output: {
-        // આ લાઈન ખાતરી કરશે કે કોઈ પણ 'undefined' મોડ્યુલ લોડ ન થાય
-        globals: {
-          'capacitor-cli.d.ts': 'undefined'
-        }
-      }
     },
-  }
+  },
 });
