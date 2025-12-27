@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Heart, Loader2, User, MapPin, Briefcase, GraduationCap, Camera, Bell, ArrowLeft, Users, Lock, CheckCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../supabaseClient';
@@ -43,13 +43,13 @@ export default function MatrimonyScreen() {
     checkFamilyAndProfileStatus();
   }, []);
 
-  // 🔥 જબરદસ્ત લોજિક: મોબાઈલ નંબરથી મેચિંગ 🔥
+  // 🔥 સુધારેલું લોજિક: મોબાઈલ નંબરથી મેચિંગ અને ઓટો-ફિલ 🔥
   const checkFamilyAndProfileStatus = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // ૧. પહેલા ચેક કરો કે મેટ્રિમોની પ્રોફાઈલ છે કે નહીં? (આ તો user_id થી જ ચેક થશે કારણ કે એ તેણે પોતે બનાવી છે)
+      // ૧. પહેલા ચેક કરો કે મેટ્રિમોની પ્રોફાઈલ છે કે નહીં?
       const { data: matProfile } = await supabase
         .from('matrimony_profiles')
         .select('*')
@@ -63,50 +63,47 @@ export default function MatrimonyScreen() {
         return;
       }
 
-      // ૨. હવે ફેમિલીમાં ચેક કરો (મોબાઈલ નંબરથી)
-      // લોગીન યુઝરનો ફોન નંબર લો
-      let userPhone = user.phone || user.user_metadata?.mobile_number || '';
+      // ૨. લોગીન યુઝરનો મોબાઈલ નંબર મેળવો (ઈમેઈલ કે ફોન ગમે તેમાંથી)
+      // ✅ અપડેટ: આ લોજિક હવે ઈમેઈલમાંથી પણ નંબર શોધી લેશે
+      let rawPhone = user.phone || user.email || user.user_metadata?.mobile_number || '';
+      
+      // ✅ પાવરફુલ ક્લીનિંગ: ફક્ત છેલ્લા ૧૦ આંકડા જ પકડશે
+      const cleanPhone = rawPhone.replace(/[^0-9]/g, '').slice(-10);
 
-      if (!userPhone) {
-        // જો ફોન નંબર ના હોય તો ના પાડી દો (ઈમેલથી લોગીન હોય તો પ્રોબ્લેમ થઈ શકે)
-        console.log("No phone number found in auth");
+      if (!cleanPhone || cleanPhone.length < 10) {
+        console.log("No valid phone number found");
         setIsFamilyVerified(false);
         return;
       }
 
-      // નંબર ક્લીન કરો: +91 કાઢી નાખો, સ્પેસ કાઢી નાખો, છેલ્લા 10 આંકડા લો
-      // ઉદાહરણ: "+91 98765 43210" -> "9876543210"
-      const cleanPhone = userPhone.replace('+91', '').replace(/\D/g, '').slice(-10);
-
       console.log("Checking family for phone:", cleanPhone);
 
-      const { data: familyMember } = await supabase
-        .from('family_members')
-        .select(`
-            *,
-            families ( village, district, taluka, gol )
-        `)
-        .eq('mobile_number', cleanPhone) // ✅ અહીં નામ નહિ, મોબાઈલ નંબરથી મેચ થાય છે
-        .maybeSingle();
+      // ૩. ✅ સુધારો: 'families' ટેબલમાં સર્ચ (હેડ અથવા મેમ્બર મોબાઈલ બંનેમાં)
+      const { data: familyRows } = await supabase
+        .from('families')
+        .select('*')
+        .or(`mobile_number.ilike.%${cleanPhone}%,member_mobile.ilike.%${cleanPhone}%`)
+        .limit(1);
 
-      if (familyMember) {
+      if (familyRows && familyRows.length > 0) {
+        const member = familyRows[0];
         setIsFamilyVerified(true);
-        setFamilyData(familyMember);
+        setFamilyData(member);
         
-        // ૩. ડેટા ઓટોમેટિક ભરી દો
+        // ૪. ✅ ડેટા ઓટોમેટિક ભરી દો (ફેમિલી ટેબલમાંથી)
         setFormData(prev => ({
           ...prev,
-          full_name: familyMember.full_name || '',
-          education: familyMember.education || '',
-          occupation: familyMember.occupation || '',
-          village: familyMember.families?.village || '',
-          taluka: familyMember.families?.taluka || '',
-          district: familyMember.families?.district || '',
-          gol: familyMember.families?.gol || '',
-          age: calculateAge(familyMember.dob) || '' 
+          full_name: member.member_name || member.head_name || '',
+          peta_atak: member.sub_surname || '',
+          village: member.village || '',
+          taluka: member.taluko || '',
+          district: member.district || '',
+          gol: member.gol || '',
+          // જો જન્મતારીખ હોય તો ઉંમર ગણશે
+          age: member.dob ? calculateAge(member.dob) : '' 
         }));
       } else {
-        setIsFamilyVerified(false); // ❌ મોબાઈલ નંબર ફેમિલી લિસ્ટમાં નથી મળ્યો
+        setIsFamilyVerified(false); // ❌ નંબર મેચ ના થયો
       }
 
     } catch (error) {
@@ -189,7 +186,7 @@ export default function MatrimonyScreen() {
   };
 
   const handleSaveProfile = async () => {
-     try {
+      try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -277,17 +274,17 @@ export default function MatrimonyScreen() {
             ) : (
                 // જો ફેમિલીમાં હોય તો ફોર્મ ખૂલશે
                 <div className="bg-white p-6 rounded-[35px] shadow-sm border border-gray-100 space-y-6">
-                     {familyData && !hasProfile && (
-                         <div className="bg-green-50 p-4 rounded-xl flex items-start gap-3 border border-green-100">
-                             <CheckCircle className="text-green-600 w-5 h-5 shrink-0 mt-0.5" />
-                             <div>
-                                <p className="text-sm text-green-800 font-bold">વેરીફાઈડ મેમ્બર ✅</p>
-                                <p className="text-xs text-green-700 mt-1">
-                                    તમારો મોબાઈલ નંબર પરિવાર લિસ્ટ સાથે મેચ થયો છે. તમારી વિગતો ઓટોમેટિક ભરાઈ ગઈ છે.
-                                </p>
+                      {familyData && !hasProfile && (
+                          <div className="bg-green-50 p-4 rounded-xl flex items-start gap-3 border border-green-100">
+                              <CheckCircle className="text-green-600 w-5 h-5 shrink-0 mt-0.5" />
+                              <div>
+                                 <p className="text-sm text-green-800 font-bold">વેરીફાઈડ મેમ્બર ✅</p>
+                                 <p className="text-xs text-green-700 mt-1">
+                                     તમારો મોબાઈલ નંબર પરિવાર લિસ્ટ સાથે મેચ થયો છે. તમારી વિગતો ઓટોમેટિક ભરાઈ ગઈ છે.
+                                 </p>
                              </div>
-                         </div>
-                     )}
+                          </div>
+                      )}
 
                     <div className="flex flex-col items-center mb-4">
                     <div className="relative group">
@@ -333,7 +330,7 @@ export default function MatrimonyScreen() {
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">માતાનું નામ</label>
                         <input type="text" value={formData.mother_name} onChange={(e) => setFormData({...formData, mother_name: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="માતાનું નામ લખો" />
                     </div>
-                     <div>
+                      <div>
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">પેટા અટક</label>
                         <input type="text" value={formData.peta_atak} onChange={(e) => setFormData({...formData, peta_atak: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="પેટા અટક લખો" />
                     </div>
