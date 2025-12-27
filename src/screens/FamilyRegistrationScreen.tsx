@@ -63,7 +63,7 @@ export default function FamilyRegistrationScreen() {
     setIsEditMode(false);
   };
 
-  // 🔥 UPDATED LOGIC: Match both head_mobile and member_mobile
+  // 🔥 UPDATED LOGIC: Match both head_mobile and member_mobile to load family
   const loadExistingFamily = async () => {
     try {
       setLoadingData(true);
