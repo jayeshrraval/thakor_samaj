@@ -14,17 +14,11 @@ interface FamilyMember {
 }
 
 const relationshipOptions = [
-  { value: 'પોતે', label: 'પોતે' },
-  { value: 'પત્ની', label: 'પત્ની' }, 
-  { value: 'પુત્ર', label: 'પુત્ર' },
-  { value: 'પુત્રી', label: 'પુત્રી' }, 
-  { value: 'પુત્રવધૂ', label: 'પુત્રવધૂ' },
-  { value: 'પૌત્ર', label: 'પૌત્ર' }, 
-  { value: 'પૌત્રી', label: 'પૌત્રી' },
-  { value: 'પિતા', label: 'પિતા' }, 
-  { value: 'માતા', label: 'માતા' },
-  { value: 'ભાઈ', label: 'ભાઈ' }, 
-  { value: 'બહેન', label: 'બહેન' },
+  { value: 'પત્ની', label: 'પત્ની' }, { value: 'પુત્ર', label: 'પુત્ર' },
+  { value: 'પુત્રી', label: 'પુત્રી' }, { value: 'પુત્રવધૂ', label: 'પુત્રવધૂ' },
+  { value: 'પૌત્ર', label: 'પૌત્ર' }, { value: 'પૌત્રી', label: 'પૌત્રી' },
+  { value: 'પિતા', label: 'પિતા' }, { value: 'માતા', label: 'માતા' },
+  { value: 'ભાઈ', label: 'ભાઈ' }, { value: 'બહેન', label: 'બહેન' },
   { value: 'અન્ય', label: 'અન્ય' },
 ];
 
@@ -37,8 +31,9 @@ export default function FamilyRegistrationScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [loadingData, setLoadingData] = useState(true);
+  const [loadingData, setLoadingData] = useState(true); // ડેટા લોડિંગ સ્ટેટ
 
+  // ફોર્મ સ્ટેટ્સ
   const [headName, setHeadName] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
   const [subSurname, setSubSurname] = useState('');
@@ -48,13 +43,14 @@ export default function FamilyRegistrationScreen() {
   const [district, setDistrict] = useState('');
   
   const [members, setMembers] = useState<FamilyMember[]>([
-    { id: `new-${Date.now()}`, memberName: '', relationship: 'પોતે', gender: '', memberMobile: '' },
+    { id: Date.now().toString(), memberName: '', relationship: '', gender: '', memberMobile: '' },
   ]);
 
   useEffect(() => {
     loadExistingFamily();
   }, []);
 
+  // ✅ ફોર્મ રીસેટ ફંક્શન (જ્યારે નવો યુઝર હોય ત્યારે બધું ખાલી કરવા)
   const resetForm = () => {
     setHeadName('');
     setMobileNumber('');
@@ -63,68 +59,88 @@ export default function FamilyRegistrationScreen() {
     setVillage('');
     setTaluko('');
     setDistrict('');
-    setMembers([{ id: `new-${Date.now()}`, memberName: '', relationship: 'પોતે', gender: '', memberMobile: '' }]);
+    setMembers([{ id: Date.now().toString(), memberName: '', relationship: '', gender: '', memberMobile: '' }]);
     setIsEditMode(false);
   };
 
-  // 🔥 POWER LOGIC: Match both head_mobile and member_mobile using ILIKE
   const loadExistingFamily = async () => {
     try {
       setLoadingData(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { navigate('/'); return; }
+      
+      if (!user) {
+        navigate('/');
+        return;
+      }
 
-      // ૧. લોગિન થયેલા યુઝરનો ૧૦ આંકડાનો નંબર મેળવો
+      // ૧. લોગિન થયેલા યુઝરનો મોબાઈલ નંબર મેળવો
       let userMobile = user.phone || user.user_metadata?.mobile_number || '';
-      userMobile = userMobile.replace(/[^0-9]/g, '').slice(-10);
+      
+      // નંબર ક્લીન કરો (છેલ્લા ૧૦ આંકડા)
+      if (userMobile.length > 10) {
+        userMobile = userMobile.slice(-10);
+      }
 
-      if (!userMobile) { setLoadingData(false); return; }
+      // જો મોબાઈલ નંબર જ ના હોય તો ફોર્મ ખાલી રાખો
+      if (!userMobile) {
+        resetForm();
+        setLoadingData(false);
+        return;
+      }
 
-      // ૨. ILIKE વાપરીને ચેક કરો કે આ નંબર મોભી કે સભ્યમાં ક્યાંય પણ છે?
-      const { data: matchedRecords, error: matchError } = await supabase
+      // ૨. ડેટાબેઝમાં શોધો: ફક્ત હાલના યુઝર માટે (user_id OR mobile_number)
+      // આ ક્વેરી ચેક કરશે કે આ નંબર ફેમિલી લિસ્ટમાં છે કે નહીં
+      const { data: matchedRows } = await supabase
         .from('families')
-        .select('mobile_number')
-        .or(`mobile_number.ilike.%${userMobile}%,member_mobile.ilike.%${userMobile}%`)
+        .select('*') // બધો ડેટા અહીં જ લઈ લીધો
+        .or(`user_id.eq.${user.id},mobile_number.ilike.%${userMobile}%,member_mobile.ilike.%${userMobile}%`)
         .limit(1);
 
-      if (matchError) throw matchError;
+      // ૩. જો ડેટા મળે તો ફોર્મ ભરો
+      if (matchedRows && matchedRows.length > 0) {
+        const head = matchedRows[0];
+        
+        setIsEditMode(true);
+        setHeadName(head.head_name || '');
+        setMobileNumber(head.mobile_number || '');
+        setSubSurname(head.sub_surname || '');
+        setGol(head.gol || '');
+        setVillage(head.village || '');
+        setTaluko(head.taluko || '');
+        setDistrict(head.district || '');
 
-      // ૩. જો મેચ મળે, તો મોભીના નંબરથી આખો ડેટા ખેંચો
-      if (matchedRecords && matchedRecords.length > 0) {
-        const foundHeadMobile = matchedRecords[0].mobile_number;
+        // ૪. સભ્યોનો ડેટા લોડ કરો (જો main table માં જ JSON હોય તો ત્યાંથી, અથવા અલગ ટેબલ હોય તો ત્યાંથી)
+        // તમારી જૂની પેટર્ન મુજબ, હું માનું છું કે તમે 'families' ટેબલમાંથી જ બધું લાવો છો. 
+        // જો સભ્યો અલગ રો (row) માં હોય તો નીચે મુજબ લોજિક આવે:
+        
+        const { data: familyMembers } = await supabase
+             .from('families')
+             .select('*')
+             .eq('user_id', head.user_id || user.id); // અથવા head_name/mobile થી ગ્રુપ કરો
 
-        const { data: fullFamily, error: fetchError } = await supabase
-          .from('families')
-          .select('*')
-          .eq('mobile_number', foundHeadMobile);
+        if (familyMembers && familyMembers.length > 0) {
+            const loadedMembers = familyMembers.map((m: any) => ({
+                id: m.id,
+                memberName: m.member_name || '',
+                relationship: m.relationship || '',
+                gender: m.gender || '',
+                memberMobile: m.member_mobile || ''
+            })).filter((m: any) => m.memberName); // ખાલી નામ વાળા કાઢી નાખો
 
-        if (fetchError) throw fetchError;
-
-        if (fullFamily && fullFamily.length > 0) {
-          setIsEditMode(true);
-          const headData = fullFamily[0];
-          setHeadName(headData.head_name || '');
-          setMobileNumber(headData.mobile_number || '');
-          setSubSurname(headData.sub_surname || '');
-          setGol(headData.gol || '');
-          setVillage(headData.village || '');
-          setTaluko(headData.taluko || '');
-          setDistrict(headData.district || '');
-
-          const loadedMembers = fullFamily.map((m: any) => ({
-             id: m.id,
-             memberName: m.member_name || '',
-             relationship: m.relationship || '',
-             gender: m.gender || '',
-             memberMobile: m.member_mobile || ''
-          }));
-          setMembers(loadedMembers);
+            if (loadedMembers.length > 0) {
+                setMembers(loadedMembers);
+            } else {
+                 // જો સભ્યો ના મળે પણ હેડ મળે, તો એક ખાલી સભ્ય રાખો
+                 setMembers([{ id: Date.now().toString(), memberName: '', relationship: '', gender: '', memberMobile: '' }]);
+            }
         }
       } else {
+        // ❌ અગત્યનું: જો ડેટા ના મળે, તો ફોર્મ ક્લીન કરો (Reset)
         resetForm();
       }
     } catch (error) {
       console.error('Error loading family:', error);
+      resetForm();
     } finally {
       setLoadingData(false);
     }
@@ -136,10 +152,13 @@ export default function FamilyRegistrationScreen() {
 
   const removeMember = async (id: string) => {
     if (members.length === 1) return;
-    if (!id.toString().startsWith('new-')) {
+    
+    if (!id.startsWith('new-')) {
        if(confirm("શું તમે આ સભ્યને કાયમી માટે ડીલીટ કરવા માંગો છો?")) {
           await supabase.from('families').delete().eq('id', id);
-       } else { return; }
+       } else {
+          return;
+       }
     }
     setMembers(members.filter((m) => m.id !== id));
   };
@@ -153,7 +172,9 @@ export default function FamilyRegistrationScreen() {
       alert('મહેરબાની કરીને બધી ફરજિયાત (*) વિગતો ભરો');
       return;
     }
+    
     setIsSubmitting(true);
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('લોગીન કરવું જરૂરી છે');
@@ -175,16 +196,21 @@ export default function FamilyRegistrationScreen() {
                 gender: m.gender,
                 member_mobile: m.memberMobile
             };
-            if (m.id && !m.id.toString().startsWith('new-')) {
+            if (!m.id.startsWith('new-')) {
                 baseObj.id = m.id;
             }
             return baseObj;
         });
 
-      const { error } = await supabase.from('families').upsert(finalData, { onConflict: 'id' });
+      const { error } = await supabase
+        .from('families')
+        .upsert(finalData, { onConflict: 'id' });
+
       if (error) throw error;
+
       alert('પરિવારની વિગતો સફળતાપૂર્વક સેવ થઈ ગઈ!');
       navigate('/family-list');
+
     } catch (error: any) {
       alert('ભૂલ: ' + error.message);
     } finally {
@@ -196,18 +222,28 @@ export default function FamilyRegistrationScreen() {
     const isOpen = openDropdown === dropdownId;
     return (
       <div className="relative">
-        <button type="button" onClick={(e) => { e.stopPropagation(); setOpenDropdown(isOpen ? null : dropdownId); }}
-          className="w-full px-4 py-3 border border-gray-200 rounded-2xl flex items-center justify-between bg-white">
-          <span className={`font-gujarati ${value ? 'text-gray-800' : 'text-gray-400'}`}>{value || placeholder}</span>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setOpenDropdown(isOpen ? null : dropdownId); }}
+          className="w-full px-4 py-3 border border-gray-200 rounded-2xl flex items-center justify-between bg-white"
+        >
+          <span className={`font-gujarati ${value ? 'text-gray-800' : 'text-gray-400'}`}>
+            {value || placeholder}
+          </span>
           <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         </button>
         <AnimatePresence>
           {isOpen && (
-            <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
-              className="absolute z-[100] w-full mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 max-h-48 overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
+              className="absolute z-[100] w-full mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 max-h-48 overflow-y-auto"
+            >
               {options.map((opt: any) => (
-                <button key={opt.value} type="button" onClick={() => { onChange(opt.value); setOpenDropdown(null); }}
-                  className="w-full px-4 py-3 text-left font-gujarati hover:bg-mint/10 flex items-center justify-between border-b border-gray-50 last:border-0">
+                <button
+                  key={opt.value} type="button"
+                  onClick={() => { onChange(opt.value); setOpenDropdown(null); }}
+                  className="w-full px-4 py-3 text-left font-gujarati hover:bg-mint/10 flex items-center justify-between border-b border-gray-50 last:border-0"
+                >
                   {opt.label}
                   {value === opt.value && <Check className="w-4 h-4 text-deep-blue" />}
                 </button>
@@ -236,21 +272,37 @@ export default function FamilyRegistrationScreen() {
           </button>
           <div>
             <h1 className="text-white font-gujarati font-bold text-xl">પરિવારની વિગત</h1>
-            <p className="text-white/80 text-xs font-gujarati">{isEditMode ? 'માહિતી સુધારો' : 'નવી માહિતી ભરો'}</p>
+            <p className="text-white/80 text-xs font-gujarati">
+                {isEditMode ? 'માહિતી સુધારો' : 'નવી માહિતી ભરો'}
+            </p>
           </div>
         </div>
       </div>
+
       <div className="px-5 py-6 space-y-6 font-gujarati">
+        {/* --- મુખ્ય માહિતી સેક્શન --- */}
         <div className="bg-white p-6 rounded-[30px] shadow-sm space-y-4 border border-gray-100">
           <h2 className="font-bold text-gray-800 flex items-center gap-2 text-lg"><User size={20} className="text-deep-blue"/> મુખ્ય માહિતી</h2>
+          
           <input type="text" value={headName} onChange={(e) => setHeadName(e.target.value)} placeholder="મોભીનું પૂરું નામ *" className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-mint" />
+          
           <div className="relative">
-            <input type="tel" maxLength={10} value={mobileNumber} onChange={(e) => setMobileNumber(e.target.value.replace(/[^0-9]/g, ''))} placeholder="મોભીનો મોબાઈલ નંબર *" className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-mint pl-12" />
+            <input 
+              type="tel" 
+              maxLength={10}
+              value={mobileNumber} 
+              onChange={(e) => setMobileNumber(e.target.value.replace(/[^0-9]/g, ''))} 
+              placeholder="મોભીનો મોબાઈલ નંબર *" 
+              className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-mint pl-12" 
+            />
             <Phone className="absolute left-4 top-3.5 text-gray-400 w-5 h-5" />
           </div>
+
           <input type="text" value={subSurname} onChange={(e) => setSubSurname(e.target.value)} placeholder="પેટા અટક *" className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-mint" />
           <input type="text" value={gol} onChange={(e) => setGol(e.target.value)} placeholder="ગોળ (દા.ત. કાશ્યપ) *" className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-mint" />
         </div>
+
+        {/* --- સભ્યોની યાદી સેક્શન --- */}
         <div className="bg-white p-6 rounded-[30px] shadow-sm space-y-4 border border-gray-100">
           <h2 className="font-bold text-gray-800 flex items-center gap-2 text-lg"><Users size={20} className="text-deep-blue"/> સભ્યોની યાદી</h2>
           <div className="space-y-4">
@@ -259,11 +311,23 @@ export default function FamilyRegistrationScreen() {
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-deep-blue/40 uppercase tracking-widest">સભ્ય #{index + 1}</span>
                   {members.length > 1 && (
-                    <button onClick={() => removeMember(member.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-full transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => removeMember(member.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-full transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                    </button>
                   )}
                 </div>
+                
                 <input type="text" value={member.memberName} onChange={(e) => updateMember(member.id, 'memberName', e.target.value)} placeholder="સભ્યનું પૂરું નામ" className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl" />
-                <input type="tel" maxLength={10} value={member.memberMobile} onChange={(e) => updateMember(member.id, 'memberMobile', e.target.value.replace(/[^0-9]/g, ''))} placeholder="સભ્યનો મોબાઈલ નંબર" className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl" />
+                
+                <input 
+                  type="tel" 
+                  maxLength={10}
+                  value={member.memberMobile} 
+                  onChange={(e) => updateMember(member.id, 'memberMobile', e.target.value.replace(/[^0-9]/g, ''))} 
+                  placeholder="સભ્યનો મોબાઈલ નંબર" 
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl" 
+                />
+
                 <div className="grid grid-cols-2 gap-3">
                   <SelectDropdown value={member.relationship} options={relationshipOptions} onChange={(v:any) => updateMember(member.id, 'relationship', v)} placeholder="સંબંધ" dropdownId={`rel-${member.id}`} />
                   <SelectDropdown value={member.gender} options={genderOptions} onChange={(v:any) => updateMember(member.id, 'gender', v)} placeholder="લિંગ" dropdownId={`gen-${member.id}`} />
@@ -271,8 +335,11 @@ export default function FamilyRegistrationScreen() {
               </div>
             ))}
           </div>
-          <button onClick={addMember} className="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl text-deep-blue flex items-center justify-center gap-2 font-bold bg-gray-50/50 hover:bg-gray-50 transition-all"><Plus size={18} /> બીજા સભ્ય ઉમેરો</button>
+          <button onClick={addMember} className="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl text-deep-blue flex items-center justify-center gap-2 font-bold bg-gray-50/50 hover:bg-gray-50 transition-all">
+            <Plus size={18} /> બીજા સભ્ય ઉમેરો
+          </button>
         </div>
+
         <div className="bg-white p-6 rounded-[30px] shadow-sm space-y-4 border border-gray-100">
           <h2 className="font-bold text-gray-800 flex items-center gap-2 text-lg"><MapPin size={20} className="text-deep-blue"/> રહેઠાણ</h2>
           <div className="grid grid-cols-2 gap-4">
@@ -281,6 +348,7 @@ export default function FamilyRegistrationScreen() {
             <input type="text" value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="જિલ્લો" className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl col-span-2" />
           </div>
         </div>
+
         <button onClick={handleSubmit} disabled={isSubmitting} className="w-full bg-deep-blue text-white font-bold py-5 rounded-[25px] shadow-2xl shadow-deep-blue/20 flex items-center justify-center gap-3 disabled:opacity-50 active:scale-95 transition-all mb-10">
           {isSubmitting ? <Loader2 className="animate-spin" /> : 'માહિતી સેવ કરો'}
         </button>
