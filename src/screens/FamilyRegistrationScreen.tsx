@@ -14,11 +14,17 @@ interface FamilyMember {
 }
 
 const relationshipOptions = [
-  { value: 'પત્ની', label: 'પત્ની' }, { value: 'પુત્ર', label: 'પુત્ર' },
-  { value: 'પુત્રી', label: 'પુત્રી' }, { value: 'પુત્રવધૂ', label: 'પુત્રવધૂ' },
-  { value: 'પૌત્ર', label: 'પૌત્ર' }, { value: 'પૌત્રી', label: 'પૌત્રી' },
-  { value: 'પિતા', label: 'પિતા' }, { value: 'માતા', label: 'માતા' },
-  { value: 'ભાઈ', label: 'ભાઈ' }, { value: 'બહેન', label: 'બહેન' },
+  { value: 'પોતે', label: 'પોતે' },
+  { value: 'પત્ની', label: 'પત્ની' }, 
+  { value: 'પુત્ર', label: 'પુત્ર' },
+  { value: 'પુત્રી', label: 'પુત્રી' }, 
+  { value: 'પુત્રવધૂ', label: 'પુત્રવધૂ' },
+  { value: 'પૌત્ર', label: 'પૌત્ર' }, 
+  { value: 'પૌત્રી', label: 'પૌત્રી' },
+  { value: 'પિતા', label: 'પિતા' }, 
+  { value: 'માતા', label: 'માતા' },
+  { value: 'ભાઈ', label: 'ભાઈ' }, 
+  { value: 'બહેન', label: 'બહેન' },
   { value: 'અન્ય', label: 'અન્ય' },
 ];
 
@@ -42,7 +48,7 @@ export default function FamilyRegistrationScreen() {
   const [district, setDistrict] = useState('');
   
   const [members, setMembers] = useState<FamilyMember[]>([
-    { id: `new-${Date.now()}`, memberName: '', relationship: '', gender: '', memberMobile: '' },
+    { id: `new-${Date.now()}`, memberName: '', relationship: 'પોતે', gender: '', memberMobile: '' },
   ]);
 
   useEffect(() => {
@@ -57,31 +63,21 @@ export default function FamilyRegistrationScreen() {
     setVillage('');
     setTaluko('');
     setDistrict('');
-    setMembers([{ id: `new-${Date.now()}`, memberName: '', relationship: '', gender: '', memberMobile: '' }]);
+    setMembers([{ id: `new-${Date.now()}`, memberName: '', relationship: 'પોતે', gender: '', memberMobile: '' }]);
     setIsEditMode(false);
   };
 
-  // ✅ તારું ઓરિજિનલ લોજિક: મોબાઈલ નંબર મેચિંગ
   const loadExistingFamily = async () => {
     try {
       setLoadingData(true);
       const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        navigate('/');
-        return;
-      }
+      if (!user) { navigate('/'); return; }
 
-      // ૧. લોગિન થયેલા યુઝરનો નંબર લો
       let userMobile = user.phone || user.user_metadata?.mobile_number || '';
       userMobile = userMobile.replace(/[^0-9]/g, '').slice(-10);
 
-      if (!userMobile) {
-        setLoadingData(false);
-        return;
-      }
+      if (!userMobile) { setLoadingData(false); return; }
 
-      // ૨. ચેક કરો કે આ નંબર મોભી (mobile_number) કે સભ્ય (member_mobile) માં છે?
       const { data: matchedRecords, error: matchError } = await supabase
         .from('families')
         .select('mobile_number')
@@ -90,7 +86,6 @@ export default function FamilyRegistrationScreen() {
 
       if (matchError) throw matchError;
 
-      // ૩. જો મેચ મળે, તો મોભીના નંબરથી આખી ફેમિલીનો ડેટા ખેંચો
       if (matchedRecords && matchedRecords.length > 0) {
         const foundHeadMobile = matchedRecords[0].mobile_number;
 
@@ -119,7 +114,6 @@ export default function FamilyRegistrationScreen() {
              gender: m.gender || '',
              memberMobile: m.member_mobile || ''
           }));
-
           setMembers(loadedMembers);
         }
       } else {
@@ -177,8 +171,6 @@ export default function FamilyRegistrationScreen() {
                 gender: m.gender,
                 member_mobile: m.memberMobile
             };
-            
-            // ✅ UUID Fix: નવી ID હોય તો ડેટાબેઝમાં મોકલવી નહીં
             if (m.id && !m.id.toString().startsWith('new-')) {
                 baseObj.id = m.id;
             }
