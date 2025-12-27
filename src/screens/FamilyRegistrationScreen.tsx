@@ -127,6 +127,7 @@ export default function FamilyRegistrationScreen() {
             if (loadedMembers.length > 0) {
                 setMembers(loadedMembers);
             } else {
+                 // જો સભ્યો ના મળે પણ હેડ મળે, તો એક ખાલી સભ્ય રાખો
                  setMembers([{ id: Date.now().toString(), memberName: '', relationship: '', gender: '', memberMobile: '' }]);
             }
         }
@@ -192,9 +193,12 @@ export default function FamilyRegistrationScreen() {
                 member_mobile: m.memberMobile
             };
             
+            // ✅ UUID FIX: જો ID અસલી UUID (જે "new-" થી શરૂ નથી થતી) હોય તો જ મોકલવી
             if (m.id && !m.id.toString().startsWith('new-')) {
                 baseObj.id = m.id;
             }
+            // ELSE માં કશું જ લખવાનું નથી, જેથી નવી ID 'null' તરીકે ના જાય
+            
             return baseObj;
         });
 
