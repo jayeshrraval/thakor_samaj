@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, ExternalLink, Calendar, Search, Loader2, Building2 } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Calendar, Search, Loader2, Building2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { supabase } from '../lib/supabase'; // ✅ Supabase કનેક્શન
+import { supabase } from '../supabaseClient'; // ✅ પાથ સુધાર્યો
+import BottomNav from '../components/BottomNav'; // ✅ બોટમ નેવિગેશન ઉમેર્યું
 
 export default function JobPostScreen() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
-  const [jobs, setJobs] = useState<any[]>([]); // રિયલ ડેટા માટે સ્ટેટ
+  const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 🔄 Supabase માંથી ડેટા લાવવાનું ફંક્શન
   useEffect(() => {
     fetchJobs();
   }, []);
@@ -21,7 +21,7 @@ export default function JobPostScreen() {
         .from('job_alerts')
         .select('*')
         .eq('is_active', true) // ફક્ત ચાલુ ભરતી જ બતાવો
-        .order('id', { ascending: false }); // નવી ભરતી સૌથી ઉપર
+        .order('id', { ascending: false });
 
       if (error) throw error;
       setJobs(data || []);
@@ -38,8 +38,8 @@ export default function JobPostScreen() {
     (job.department?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
-  // 📅 તારીખને ગુજરાતીમાં ફેરવવા માટે
-  const formatDate = (dateString: string) => {
+  // 📅 તારીખ ફોર્મેટ
+  const formatDate = (dateString) => {
     if (!dateString) return '';
     return new Date(dateString).toLocaleDateString('gu-IN', {
       day: 'numeric', month: 'long', year: 'numeric'
@@ -47,12 +47,13 @@ export default function JobPostScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-6 font-gujarati">
+    <div className="min-h-screen bg-gray-50 pb-24 font-gujarati"> {/* pb-24 જેથી બોટમ નેવ કપાય નહીં */}
+      
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 pt-12 rounded-b-[30px] shadow-lg">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 pt-12 rounded-b-[30px] shadow-lg sticky top-0 z-20">
         <div className="flex items-center space-x-4 mb-6">
           <button 
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/home')} // બેક બટન હવે હોમ પર લઈ જશે
             className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white/30 transition-all"
           >
             <ArrowLeft className="w-6 h-6 text-white" />
@@ -76,13 +77,12 @@ export default function JobPostScreen() {
       {/* Jobs List */}
       <div className="px-5 py-6 space-y-4">
         {loading ? (
-          // લોડિંગ એનિમેશન
           <div className="flex flex-col items-center justify-center mt-10 space-y-3">
             <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
             <p className="text-gray-500 text-sm">માહિતી લોડ થઈ રહી છે...</p>
           </div>
         ) : filteredJobs.length === 0 ? (
-          <div className="text-center text-gray-500 mt-10">કોઈ નવી ભરતી મળી નથી.</div>
+          <div className="text-center text-gray-500 mt-10 font-bold">કોઈ નવી ભરતી મળી નથી.</div>
         ) : (
           filteredJobs.map((job, index) => (
             <motion.div
@@ -131,7 +131,6 @@ export default function JobPostScreen() {
                  )}
               </div>
 
-              {/* Apply Button */}
               <button
                 onClick={() => window.open(job.apply_link, '_blank')}
                 className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold flex items-center justify-center space-x-2 active:scale-95 transition-all hover:bg-blue-700"
@@ -143,6 +142,9 @@ export default function JobPostScreen() {
           ))
         )}
       </div>
+
+      {/* ✅ બોટમ નેવિગેશન અહીં ઉમેર્યું */}
+      <BottomNav />
     </div>
   );
 }

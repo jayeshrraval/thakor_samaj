@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  Bell, Settings, Heart, Search, MessageCircle, User, CreditCard, 
-  Building2, Bot, Users, GraduationCap, AlertTriangle, Briefcase 
-} from 'lucide-react'; 
+import {
+  Bell, Settings, Heart, Search, MessageCircle, User, CreditCard,
+  Building2, Bot, Users, GraduationCap, AlertTriangle, Briefcase
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import BottomNav from '../components/BottomNav';
-import { supabase } from '../supabaseClient'; 
+import { supabase } from '../supabaseClient';
 
 export default function HomeScreen() {
   const navigate = useNavigate();
   const [userName, setUserName] = useState('Yogi Member');
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  
-  // ✅ નવા સ્ટેટ્સ: એપ યુઝર્સ અને મેટ્રિમોની પ્રોફાઈલ માટે
+
+  // ✅ સ્ટેટ્સ: એપ યુઝર્સ અને મેટ્રિમોની પ્રોફાઈલ માટે
   const [statsData, setStatsData] = useState({
     totalAppUsers: 0,
     matrimonyProfiles: 0,
@@ -31,12 +31,12 @@ export default function HomeScreen() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'matrimony_profiles' },
-        () => fetchDashboardData() 
+        () => fetchDashboardData()
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'users' }, // ✅ અહીં 'users' ટેબલ સેટ કર્યું છે
-        () => fetchDashboardData() 
+        { event: '*', schema: 'public', table: 'users' },
+        () => fetchDashboardData()
       )
       .subscribe();
 
@@ -49,21 +49,21 @@ export default function HomeScreen() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // ૧. યુઝર ડેટા (પ્રોફાઇલ માટે 'users' ટેબલ વાપર્યું છે)
+        // ૧. યુઝર ડેટા
         const { data: userData } = await supabase
-          .from('users') // ✅ 'profiles' ને બદલે ફરીથી 'users' કરી દીધું
+          .from('users')
           .select('full_name, avatar_url')
           .eq('id', user.id)
           .maybeSingle();
-        
+
         if (userData) {
           setUserName(userData.full_name || user.user_metadata?.full_name || 'Yogi Member');
           setUserPhoto(userData.avatar_url);
         }
 
-        // ૨. કુલ રજીસ્ટર્ડ યુઝર્સ (App Users)
+        // ૨. કુલ રજીસ્ટર્ડ યુઝર્સ
         const { count: userCount } = await supabase
-          .from('users') // ✅ 'profiles' ને બદલે ફરીથી 'users' કરી દીધું
+          .from('users')
           .select('*', { count: 'exact', head: true });
 
         // ૩. કુલ મેટ્રિમોની પ્રોફાઈલ્સ
@@ -75,7 +75,7 @@ export default function HomeScreen() {
         const { count: messageCount } = await supabase
           .from('messages')
           .select('*', { count: 'exact', head: true })
-          .eq('is_read', false); 
+          .eq('is_read', false);
 
         setStatsData({
             totalAppUsers: userCount || 0,
@@ -90,20 +90,21 @@ export default function HomeScreen() {
     }
   };
 
+  // ✅ અપડેટ: 'મેસેજ' કાર્ડ કાઢીને 'મેટ્રીમોની ચેટ' ઉમેર્યું
   const featureCards = [
     { icon: Heart, title: 'મેટ્રિમોની પ્રોફાઈલ', color: 'from-pink-400 to-rose-500', path: '/matrimony' },
-    { icon: Search, title: 'પાર્ટનર શોધો', color: 'from-mint to-teal-500', path: '/matrimony' },
+    // Partner Search Removed
     { icon: Users, title: 'પરિવાર રજીસ્ટ્રેશન', color: 'from-deep-blue to-cyan-500', path: '/family-list' },
     { icon: GraduationCap, title: 'શિક્ષણ અને ભવિષ્ય', color: 'from-indigo-400 to-purple-500', path: '/education' },
     { icon: Briefcase, title: 'નોકરીની જાહેરાત', color: 'from-blue-600 to-indigo-600', path: '/jobs' },
-    { icon: MessageCircle, title: 'મેસેજ', color: 'from-blue-400 to-cyan-500', path: '/messages' },
-    { icon: User, title: 'મારી પ્રોફાઈલ', color: 'from-amber-400 to-orange-500', path: '/profile' },
+    // ✅ અહીં મેસેજ કાઢીને મેટ્રીમોની ચેટ કર્યું
+    { icon: MessageCircle, title: 'મેટ્રીમોની ચેટ', color: 'from-blue-400 to-cyan-500', path: '/messages' },
+    // My Profile Removed
     { icon: CreditCard, title: 'મેમ્બરશીપ ફી', color: 'from-royal-gold to-yellow-600', path: '/subscription' },
     { icon: Building2, title: 'યોગી સમાજ ટ્રસ્ટ', color: 'from-emerald-400 to-green-500', path: '/trust' },
     { icon: Bot, title: 'જ્ઞાન સહાયક', color: 'from-violet-400 to-purple-500', path: '/ai-assistant' },
   ];
 
-  // ✅ અહીં હવે 'રસ દાખવ્યો' નથી, તેના બદલે રજીસ્ટર્ડ યુઝર અને મેટ્રિમોની આંકડા છે
   const stats = [
     { label: 'કુલ સભ્યો', value: statsData.totalAppUsers.toString(), color: 'text-deep-blue' },
     { label: 'લગ્ન પ્રોફાઈલ', value: statsData.matrimonyProfiles.toString(), color: 'text-mint' },
@@ -116,7 +117,7 @@ export default function HomeScreen() {
         <div className="px-6 py-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
-              <div 
+              <div
                 onClick={() => navigate('/profile')}
                 className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center border border-white/30 shadow-inner overflow-hidden cursor-pointer"
               >
@@ -143,7 +144,7 @@ export default function HomeScreen() {
         </div>
       </div>
 
-      <motion.div 
+      <motion.div
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => navigate('/krishna-chat')}
@@ -161,7 +162,7 @@ export default function HomeScreen() {
       </motion.div>
 
       <div className="px-6 mt-6">
-          <motion.div 
+          <motion.div
              whileTap={{ scale: 0.95 }}
              onClick={() => navigate('/accidental-aid')}
              className="bg-white p-4 rounded-2xl shadow-md border-l-8 border-red-600 flex items-center justify-between relative active:bg-red-50 transition-all"

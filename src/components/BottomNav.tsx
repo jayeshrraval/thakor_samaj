@@ -1,4 +1,4 @@
-import { Home, Heart, ImageIcon, MessageCircle, User } from 'lucide-react';
+import { Home, Heart, Briefcase, User } from 'lucide-react'; // Briefcase આઈકન નોકરી માટે
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
@@ -9,8 +9,7 @@ export default function BottomNav() {
   const navItems = [
     { id: 'home', icon: Home, label: 'Home', path: '/home' },
     { id: 'matrimony', icon: Heart, label: 'Matrimony', path: '/matrimony' },
-    { id: 'yogigram', icon: ImageIcon, label: 'Yogigram', path: '/yogigram' },
-    { id: 'messages', icon: MessageCircle, label: 'Messages', path: '/messages' },
+    { id: 'jobs', icon: Briefcase, label: 'Jobs', path: '/jobs' }, // ✅ મેસેજ કાઢીને Jobs કર્યું
     { id: 'account', icon: User, label: 'Account', path: '/profile' },
   ];
 
