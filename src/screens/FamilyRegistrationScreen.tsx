@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Users, Plus, Trash2, MapPin, User, ChevronDown, Check, ArrowLeft, Loader2 } from 'lucide-react';
+import { Users, Plus, Trash2, MapPin, User, ChevronDown, Check, ArrowLeft, Loader2, Phone } from 'lucide-react'; // Phone icon added
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../supabaseClient';
 
+// ઈન્ટરફેસમાં મોબાઈલ નંબર ઉમેર્યો
 interface FamilyMember {
-  id: string; // આ ડેટાબેઝનો ID હશે જો એડિટ કરતા હોઈએ તો
+  id: string;
   memberName: string;
   relationship: string;
   gender: string;
+  memberMobile: string; // New Field for Member's Mobile
 }
 
 const relationshipOptions = [
@@ -32,16 +34,18 @@ export default function FamilyRegistrationScreen() {
   const [isEditMode, setIsEditMode] = useState(false);
 
   const [headName, setHeadName] = useState('');
+  const [mobileNumber, setMobileNumber] = useState(''); // New State for Head's Mobile
   const [subSurname, setSubSurname] = useState('');
   const [gol, setGol] = useState('');
   const [village, setVillage] = useState('');
   const [taluko, setTaluko] = useState('');
   const [district, setDistrict] = useState('');
+  
+  // સભ્યોના સ્ટેટમાં memberMobile ઉમેર્યું
   const [members, setMembers] = useState<FamilyMember[]>([
-    { id: Date.now().toString(), memberName: '', relationship: '', gender: '' },
+    { id: Date.now().toString(), memberName: '', relationship: '', gender: '', memberMobile: '' },
   ]);
 
-  // ✅ ૧. જો ડેટા પહેલેથી હોય તો લોડ કરો (એડિટિંગ માટે)
   useEffect(() => {
     loadExistingFamily();
   }, []);
@@ -59,6 +63,7 @@ export default function FamilyRegistrationScreen() {
       setIsEditMode(true);
       const head = data[0];
       setHeadName(head.head_name || '');
+      setMobileNumber(head.mobile_number || ''); // Load Head's Mobile
       setSubSurname(head.sub_surname || '');
       setGol(head.gol || '');
       setVillage(head.village || '');
@@ -66,23 +71,23 @@ export default function FamilyRegistrationScreen() {
       setDistrict(head.district || '');
 
       const loadedMembers = data.map((m: any) => ({
-        id: m.id, // ડેટાબેઝનો ઓરીજીનલ ID
+        id: m.id,
         memberName: m.member_name,
         relationship: m.relationship,
-        gender: m.gender
+        gender: m.gender,
+        memberMobile: m.member_mobile || '' // Load Member's Mobile
       }));
       setMembers(loadedMembers);
     }
   };
 
   const addMember = () => {
-    setMembers([...members, { id: `new-${Date.now()}`, memberName: '', relationship: '', gender: '' }]);
+    setMembers([...members, { id: `new-${Date.now()}`, memberName: '', relationship: '', gender: '', memberMobile: '' }]);
   };
 
   const removeMember = async (id: string) => {
     if (members.length === 1) return;
     
-    // જો આ સભ્ય ડેટાબેઝમાં છે, તો તેને ત્યાંથી પણ ડીલીટ કરવો પડશે
     if (!id.startsWith('new-')) {
        if(confirm("શું તમે આ સભ્યને કાયમી માટે ડીલીટ કરવા માંગો છો?")) {
           await supabase.from('families').delete().eq('id', id);
@@ -98,7 +103,8 @@ export default function FamilyRegistrationScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!headName.trim() || !subSurname.trim() || !gol.trim()) {
+    // મોબાઈલ નંબરનું વેલિડેશન ઉમેર્યું
+    if (!headName.trim() || !subSurname.trim() || !gol.trim() || !mobileNumber.trim()) {
       alert('મહેરબાની કરીને બધી ફરજિયાત (*) વિગતો ભરો');
       return;
     }
@@ -109,13 +115,13 @@ export default function FamilyRegistrationScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('લોગીન કરવું જરૂરી છે');
 
-      // ✅ ૨. UPSERT લોજિક: જો ID હોય તો Update, ના હોય તો Insert
       const finalData = members
         .filter((m) => m.memberName.trim())
         .map((m) => {
             const baseObj: any = {
                 user_id: user.id,
                 head_name: headName,
+                mobile_number: mobileNumber, // Save Head's Mobile to every row
                 sub_surname: subSurname,
                 gol: gol,
                 village: village,
@@ -123,9 +129,9 @@ export default function FamilyRegistrationScreen() {
                 district: district,
                 member_name: m.memberName,
                 relationship: m.relationship,
-                gender: m.gender
+                gender: m.gender,
+                member_mobile: m.memberMobile // Save Member's Mobile
             };
-            // જો સભ્ય નવો ના હોય, તો જૂનો ID આપો જેથી તે અપડેટ થાય
             if (!m.id.startsWith('new-')) {
                 baseObj.id = m.id;
             }
@@ -202,13 +208,30 @@ export default function FamilyRegistrationScreen() {
       </div>
 
       <div className="px-5 py-6 space-y-6 font-gujarati">
+        {/* --- મુખ્ય માહિતી સેક્શન --- */}
         <div className="bg-white p-6 rounded-[30px] shadow-sm space-y-4 border border-gray-100">
           <h2 className="font-bold text-gray-800 flex items-center gap-2 text-lg"><User size={20} className="text-deep-blue"/> મુખ્ય માહિતી</h2>
+          
           <input type="text" value={headName} onChange={(e) => setHeadName(e.target.value)} placeholder="મોભીનું પૂરું નામ *" className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-mint" />
+          
+          {/* મોભીનો મોબાઈલ નંબર ઉમેર્યો */}
+          <div className="relative">
+            <input 
+              type="tel" 
+              maxLength={10}
+              value={mobileNumber} 
+              onChange={(e) => setMobileNumber(e.target.value.replace(/[^0-9]/g, ''))} 
+              placeholder="મોભીનો મોબાઈલ નંબર *" 
+              className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-mint pl-12" 
+            />
+            <Phone className="absolute left-4 top-3.5 text-gray-400 w-5 h-5" />
+          </div>
+
           <input type="text" value={subSurname} onChange={(e) => setSubSurname(e.target.value)} placeholder="પેટા અટક *" className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-mint" />
           <input type="text" value={gol} onChange={(e) => setGol(e.target.value)} placeholder="ગોળ (દા.ત. કાશ્યપ) *" className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-mint" />
         </div>
 
+        {/* --- સભ્યોની યાદી સેક્શન --- */}
         <div className="bg-white p-6 rounded-[30px] shadow-sm space-y-4 border border-gray-100">
           <h2 className="font-bold text-gray-800 flex items-center gap-2 text-lg"><Users size={20} className="text-deep-blue"/> સભ્યોની યાદી</h2>
           <div className="space-y-4">
@@ -222,7 +245,19 @@ export default function FamilyRegistrationScreen() {
                     </button>
                   )}
                 </div>
+                
                 <input type="text" value={member.memberName} onChange={(e) => updateMember(member.id, 'memberName', e.target.value)} placeholder="સભ્યનું પૂરું નામ" className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl" />
+                
+                {/* સભ્યનો મોબાઈલ નંબર ઉમેર્યો */}
+                <input 
+                  type="tel" 
+                  maxLength={10}
+                  value={member.memberMobile} 
+                  onChange={(e) => updateMember(member.id, 'memberMobile', e.target.value.replace(/[^0-9]/g, ''))} 
+                  placeholder="સભ્યનો મોબાઈલ નંબર" 
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl" 
+                />
+
                 <div className="grid grid-cols-2 gap-3">
                   <SelectDropdown value={member.relationship} options={relationshipOptions} onChange={(v:any) => updateMember(member.id, 'relationship', v)} placeholder="સંબંધ" dropdownId={`rel-${member.id}`} />
                   <SelectDropdown value={member.gender} options={genderOptions} onChange={(v:any) => updateMember(member.id, 'gender', v)} placeholder="લિંગ" dropdownId={`gen-${member.id}`} />

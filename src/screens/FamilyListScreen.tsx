@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Search, Users, MapPin, ChevronRight, ArrowLeft, 
-  Loader2, UserPlus, Trash2, Edit2 
+  Loader2, UserPlus, Trash2, Edit2, Phone // ✅ Phone આઈકોન ઉમેર્યો
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../supabaseClient';
@@ -10,10 +10,10 @@ import BottomNav from '../components/BottomNav';
 
 export default function FamilyListScreen() {
   const navigate = useNavigate();
-  const [families, setFamilies] = useState<any[]>([]);
+  const [families, setFamilies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   useEffect(() => {
     const init = async () => {
@@ -35,7 +35,7 @@ export default function FamilyListScreen() {
       if (error) throw error;
 
       // ✅ એક જ ટેબલના ડેટાને 'head_name' અને 'village' મુજબ ગ્રુપ કરો
-      const grouped = data.reduce((acc: any, curr: any) => {
+      const grouped = data.reduce((acc, curr) => {
         const key = `${curr.head_name}-${curr.village}`;
         if (!acc[key]) {
           acc[key] = {
@@ -44,6 +44,7 @@ export default function FamilyListScreen() {
             sub_surname: curr.sub_surname,
             village: curr.village,
             district: curr.district,
+            mobile_number: curr.mobile_number, // ✅ મોબાઈલ નંબર અહીં લીધો
             user_id: curr.user_id, // સિક્યુરિટી ચેક માટે
             members: []
           };
@@ -53,14 +54,14 @@ export default function FamilyListScreen() {
       }, {});
 
       setFamilies(Object.values(grouped));
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error:', error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const removeMember = async (memberId: string) => {
+  const removeMember = async (memberId) => {
     if (window.confirm("શું તમે આ સભ્યને યાદીમાંથી કાઢવા માંગો છો?")) {
       const { error } = await supabase.from('families').delete().eq('id', memberId);
       if (error) alert(error.message);
@@ -113,7 +114,7 @@ export default function FamilyListScreen() {
         ) : (
           <div className="space-y-6">
             <AnimatePresence>
-              {filteredFamilies.map((family, index) => (
+              {filteredFamilies.map((family) => (
                 <motion.div
                   key={family.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -124,11 +125,20 @@ export default function FamilyListScreen() {
                   <div className="p-5 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center">
                     <div>
                       <h3 className="font-bold text-gray-800 text-lg leading-tight">{family.head_name}</h3>
+                      
+                      {/* ગામ અને જિલ્લો */}
                       <div className="flex items-center text-gray-500 text-xs gap-1 mt-1">
                         <MapPin size={12} className="text-orange-500" />
                         <span>{family.village}, {family.district}</span>
                       </div>
+
+                      {/* ✅ મોબાઈલ નંબર અહીં બતાવ્યો */}
+                      <div className="flex items-center text-deep-blue text-xs gap-1 mt-1.5 font-bold">
+                        <Phone size={12} />
+                        <span>{family.mobile_number ? family.mobile_number : 'નંબર નથી'}</span>
+                      </div>
                     </div>
+
                     <span className="bg-deep-blue/10 text-deep-blue px-3 py-1 rounded-full text-xs font-bold">
                       {family.members.length} સભ્યો
                     </span>
@@ -136,7 +146,7 @@ export default function FamilyListScreen() {
 
                   {/* Members List */}
                   <div className="p-4 space-y-3">
-                    {family.members.map((m: any) => (
+                    {family.members.map((m) => (
                       <div key={m.id} className="flex justify-between items-center bg-white border border-gray-50 p-3 rounded-xl shadow-sm">
                         <div>
                           <p className="font-bold text-gray-700 text-sm">{m.member_name}</p>
@@ -149,7 +159,8 @@ export default function FamilyListScreen() {
                             <button onClick={() => removeMember(m.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors">
                               <Trash2 size={16} />
                             </button>
-                            <button onClick={() => navigate(`/edit-member/${m.id}`)} className="p-2 text-blue-400 hover:bg-blue-50 rounded-lg transition-colors">
+                            {/* જો એડિટનું પેજ હોય તો જ આ બટન કામ કરશે, નહીંતર કાઢી નાખી શકાય */}
+                            <button onClick={() => navigate(`/family-registration`)} className="p-2 text-blue-400 hover:bg-blue-50 rounded-lg transition-colors">
                               <Edit2 size={16} />
                             </button>
                           </div>
