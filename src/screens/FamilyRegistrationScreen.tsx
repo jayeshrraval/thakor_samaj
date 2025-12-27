@@ -61,7 +61,7 @@ export default function FamilyRegistrationScreen() {
     setIsEditMode(false);
   };
 
-  // 🔥 POWER LOGIC: Match both head_mobile and member_mobile using ILIKE
+  // ✅ તારું ઓરિજિનલ લોજિક: મોબાઈલ નંબર મેચિંગ
   const loadExistingFamily = async () => {
     try {
       setLoadingData(true);
@@ -72,6 +72,7 @@ export default function FamilyRegistrationScreen() {
         return;
       }
 
+      // ૧. લોગિન થયેલા યુઝરનો નંબર લો
       let userMobile = user.phone || user.user_metadata?.mobile_number || '';
       userMobile = userMobile.replace(/[^0-9]/g, '').slice(-10);
 
@@ -80,14 +81,16 @@ export default function FamilyRegistrationScreen() {
         return;
       }
 
+      // ૨. ચેક કરો કે આ નંબર મોભી (mobile_number) કે સભ્ય (member_mobile) માં છે?
       const { data: matchedRecords, error: matchError } = await supabase
         .from('families')
         .select('mobile_number')
-        .or(`mobile_number.ilike.%${userMobile}%,member_mobile.ilike.%${userMobile}%`)
+        .or(`mobile_number.eq.${userMobile},member_mobile.eq.${userMobile}`)
         .limit(1);
 
       if (matchError) throw matchError;
 
+      // ૩. જો મેચ મળે, તો મોભીના નંબરથી આખી ફેમિલીનો ડેટા ખેંચો
       if (matchedRecords && matchedRecords.length > 0) {
         const foundHeadMobile = matchedRecords[0].mobile_number;
 
@@ -175,7 +178,7 @@ export default function FamilyRegistrationScreen() {
                 member_mobile: m.memberMobile
             };
             
-            // ✅ UUID FIX: જો ID "new-" થી ચાલુ થાય તો એને ના મોકલો (Supabase જાતે બનાવશે)
+            // ✅ UUID Fix: નવી ID હોય તો ડેટાબેઝમાં મોકલવી નહીં
             if (m.id && !m.id.toString().startsWith('new-')) {
                 baseObj.id = m.id;
             }
