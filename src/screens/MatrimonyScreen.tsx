@@ -60,6 +60,7 @@ export default function MatrimonyScreen() {
     }
   };
 
+  // ✅ અપડેટ કરેલું ફંક્શન: ડુપ્લીકેટ રિક્વેસ્ટ રોકવા માટે
   const handleSendRequest = async (receiverId: string) => {
     if (!hasProfile) {
       alert("તમે રિક્વેસ્ટ મોકલી શકતા નથી! પહેલા 'મારી પ્રોફાઇલ'માં જઈને તમારી વિગતો ભરો.");
@@ -71,18 +72,37 @@ export default function MatrimonyScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return alert('લોગીન કરો.');
 
+      // ૧. પહેલા ચેક કરો કે રિક્વેસ્ટ મોકલેલી છે કે નહીં
+      const { data: existingRequest, error: checkError } = await supabase
+        .from('requests')
+        .select('*')
+        .eq('sender_id', user.id)
+        .eq('receiver_id', receiverId)
+        .single(); // એક જ રેકોર્ડ શોધશે
+
+      // જો કોઈ ડેટા મળે (મતલબ રિક્વેસ્ટ મોકલેલી છે)
+      if (existingRequest) {
+        alert('તમે આ વ્યક્તિને પહેલાથી જ રિક્વેસ્ટ મોકલી દીધી છે! ✋');
+        return; // અહીંથી જ અટકી જાઓ, આગળ ના વધો
+      }
+
+      // ૨. જો ના મોકલી હોય, તો જ નવી બનાવો
       const { error } = await supabase
         .from('requests')
         .insert([{ sender_id: user.id, receiver_id: receiverId, status: 'pending' }]);
 
       if (error) {
+        // જો યુનિક કન્સ્ટ્રેઇન્ટ એરર આવે તો પણ હેન્ડલ કરો
         if (error.code === '23505') return alert('તમે આ વ્યક્તિને પહેલાથી રિક્વેસ્ટ મોકલી દીધી છે.');
         throw error;
       }
 
       alert('રિક્વેસ્ટ સફળતાપૂર્વક મોકલાઈ ગઈ! 🎉');
     } catch (error: any) {
-      alert('ભૂલ આવી: ' + error.message);
+      // જો 'no rows' ની એરર આવે તો તેને ઇગ્નોર કરો (તેનો મતલબ રિક્વેસ્ટ નથી, જે સારું છે)
+      if (error.code !== 'PGRST116') {
+         alert('ભૂલ આવી: ' + error.message);
+      }
     }
   };
 
@@ -296,6 +316,7 @@ export default function MatrimonyScreen() {
                   <DetailRow icon={GraduationCap} label="શિક્ષણ" value={selectedProfile.education} />
                   <DetailRow icon={Heart} label="ગોળ" value={selectedProfile.gol} />
                 </div>
+                {/* અહીં પણ બટનમાં સેમ ફંક્શન કોલ થશે */}
                 <button onClick={() => handleSendRequest(selectedProfile.user_id)} className="w-full mt-6 bg-pink-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all uppercase tracking-widest">રિક્વેસ્ટ મોકલો</button>
               </div>
             ) : <p className="text-center text-gray-400 font-bold mt-10">લિસ્ટમાંથી કોઈ પ્રોફાઇલ પસંદ કરો.</p>}
