@@ -67,25 +67,29 @@ export default function FamilyRegistrationScreen() {
     setIsEditMode(false);
   };
 
+  // 🔥 POWER LOGIC: Match both head_mobile and member_mobile using ILIKE
   const loadExistingFamily = async () => {
     try {
       setLoadingData(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate('/'); return; }
 
+      // ૧. લોગિન થયેલા યુઝરનો ૧૦ આંકડાનો નંબર મેળવો
       let userMobile = user.phone || user.user_metadata?.mobile_number || '';
       userMobile = userMobile.replace(/[^0-9]/g, '').slice(-10);
 
       if (!userMobile) { setLoadingData(false); return; }
 
+      // ૨. ILIKE વાપરીને ચેક કરો કે આ નંબર મોભી કે સભ્યમાં ક્યાંય પણ છે?
       const { data: matchedRecords, error: matchError } = await supabase
         .from('families')
         .select('mobile_number')
-        .or(`mobile_number.eq.${userMobile},member_mobile.eq.${userMobile}`)
+        .or(`mobile_number.ilike.%${userMobile}%,member_mobile.ilike.%${userMobile}%`)
         .limit(1);
 
       if (matchError) throw matchError;
 
+      // ૩. જો મેચ મળે, તો મોભીના નંબરથી આખો ડેટા ખેંચો
       if (matchedRecords && matchedRecords.length > 0) {
         const foundHeadMobile = matchedRecords[0].mobile_number;
 
