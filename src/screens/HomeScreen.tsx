@@ -1,18 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Bell, Settings, Heart, Search, MessageCircle, User, CreditCard,
-  Building2, Bot, Users, GraduationCap, AlertTriangle, Briefcase
+  Building2, Bot, Users, GraduationCap, AlertTriangle, Briefcase, X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../supabaseClient';
+
+// ✅ સાઉન્ડ ફાઈલનો પાથ (public folder માં હોવી જોઈએ અથવા URL)
+const NOTIFICATION_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'; 
 
 export default function HomeScreen() {
   const navigate = useNavigate();
   const [userName, setUserName] = useState('Yogi Member');
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showNotificationPopup, setShowNotificationPopup] = useState(false); // ✅ પોપઅપ સ્ટેટ
+
+  // ✅ ઓડિયો પ્લેયર રેફરન્સ
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // ✅ સ્ટેટ્સ: એપ યુઝર્સ અને મેટ્રિમોની પ્રોફાઈલ માટે
   const [statsData, setStatsData] = useState({
@@ -24,10 +31,13 @@ export default function HomeScreen() {
   // --- Real-time Logic ---
   useEffect(() => {
     fetchDashboardData();
+    
+    // ✅ ઓડિયો ઓબ્જેક્ટ તૈયાર કરો
+    audioRef.current = new Audio(NOTIFICATION_SOUND_URL);
 
     // ડેટાબેઝમાં ફેરફાર થાય તો ઓટોમેટિક અપડેટ કરો
     const channel = supabase
-      .channel('realtime-counts')
+      .channel('realtime-dashboard')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'matrimony_profiles' },
@@ -37,6 +47,23 @@ export default function HomeScreen() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'users' },
         () => fetchDashboardData()
+      )
+      // 🔥 ખાસ સુધારો: ટેબલનું નામ 'notifications' કર્યું 🔥
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications' }, 
+        (payload) => {
+           console.log("New Notification received!", payload);
+           // ૧. સાઉન્ડ વગાડો
+           if (audioRef.current) {
+              audioRef.current.play().catch(e => console.log("Audio play failed:", e));
+           }
+           // ૨. પોપઅપ બતાવો
+           setShowNotificationPopup(true);
+           
+           // ૩. ૫ સેકન્ડ પછી પોપઅપ બંધ કરો (ઓપ્શનલ)
+           setTimeout(() => setShowNotificationPopup(false), 5000);
+        }
       )
       .subscribe();
 
@@ -93,13 +120,10 @@ export default function HomeScreen() {
   // ✅ અપડેટ: 'મેસેજ' કાર્ડ કાઢીને 'મેટ્રીમોની ચેટ' ઉમેર્યું
   const featureCards = [
     { icon: Heart, title: 'મેટ્રિમોની પ્રોફાઈલ', color: 'from-pink-400 to-rose-500', path: '/matrimony' },
-    // Partner Search Removed
     { icon: Users, title: 'પરિવાર રજીસ્ટ્રેશન', color: 'from-deep-blue to-cyan-500', path: '/family-list' },
     { icon: GraduationCap, title: 'શિક્ષણ અને ભવિષ્ય', color: 'from-indigo-400 to-purple-500', path: '/education' },
     { icon: Briefcase, title: 'નોકરીની જાહેરાત', color: 'from-blue-600 to-indigo-600', path: '/jobs' },
-    // ✅ અહીં મેસેજ કાઢીને મેટ્રીમોની ચેટ કર્યું
     { icon: MessageCircle, title: 'મેટ્રીમોની ચેટ', color: 'from-blue-400 to-cyan-500', path: '/messages' },
-    // My Profile Removed
     { icon: CreditCard, title: 'મેમ્બરશીપ ફી', color: 'from-royal-gold to-yellow-600', path: '/subscription' },
     { icon: Building2, title: 'યોગી સમાજ ટ્રસ્ટ', color: 'from-emerald-400 to-green-500', path: '/trust' },
     { icon: Bot, title: 'જ્ઞાન સહાયક', color: 'from-violet-400 to-purple-500', path: '/ai-assistant' },
@@ -112,7 +136,36 @@ export default function HomeScreen() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 font-gujarati">
+    <div className="min-h-screen bg-gray-50 pb-24 font-gujarati relative">
+      
+      {/* 🔥 નોટિફિકેશન પોપઅપ મોડલ 🔥 */}
+      <AnimatePresence>
+        {showNotificationPopup && (
+          <motion.div 
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-24 left-1/2 transform -translate-x-1/2 z-[100] w-[90%] max-w-sm"
+          >
+            <div className="bg-white/90 backdrop-blur-md border border-deep-blue/20 p-4 rounded-2xl shadow-2xl flex items-center gap-4 relative">
+              <div className="bg-deep-blue/10 p-3 rounded-full animate-bounce">
+                 <Bell className="w-6 h-6 text-deep-blue" />
+              </div>
+              <div onClick={() => { navigate('/notifications'); setShowNotificationPopup(false); }}>
+                 <h3 className="font-bold text-gray-800 text-sm">નવી નોટીફીકેશન આવેલ છે!</h3>
+                 <p className="text-xs text-gray-500 font-medium">હમણાજ તપાસો</p>
+              </div>
+              <button 
+                onClick={() => setShowNotificationPopup(false)}
+                className="absolute top-2 right-2 text-gray-400 hover:text-red-500"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="bg-gradient-to-r from-deep-blue to-[#1A8FA3] safe-area-top shadow-lg">
         <div className="px-6 py-8">
           <div className="flex items-center justify-between mb-4">
