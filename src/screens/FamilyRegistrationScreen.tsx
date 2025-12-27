@@ -50,18 +50,23 @@ export default function FamilyRegistrationScreen() {
     loadExistingFamily();
   }, []);
 
+  // ✅ સુધારેલું ડેટા લોડિંગ ફંક્શન (આનાથી જૂનો ડેટા આપોઆપ આવી જશે)
   const loadExistingFamily = async () => {
+    // ૧. હાલના યુઝરને ઓળખો
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // ૨. યુઝર આઈડી (user_id) થી ડેટા શોધો
     const { data, error } = await supabase
       .from('families')
       .select('*')
       .eq('user_id', user.id);
 
+    // ૩. જો ડેટા મળે તો ફોર્મ ભરી દો
     if (data && data.length > 0) {
       setIsEditMode(true);
-      const head = data[0];
+      const head = data[0]; // પહેલા રો માંથી મોભીની વિગત લો
+      
       setHeadName(head.head_name || '');
       setMobileNumber(head.mobile_number || ''); // Load Head's Mobile
       setSubSurname(head.sub_surname || '');
@@ -70,6 +75,7 @@ export default function FamilyRegistrationScreen() {
       setTaluko(head.taluko || '');
       setDistrict(head.district || '');
 
+      // બધા રો (Rows) ને મેમ્બર તરીકે સેટ કરો
       const loadedMembers = data.map((m: any) => ({
         id: m.id,
         memberName: m.member_name,
