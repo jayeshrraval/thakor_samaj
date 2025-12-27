@@ -31,11 +31,11 @@ import ProfileScreen from './screens/ProfileScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import AboutScreen from './screens/AboutScreen'; 
 
-// ✅ આ ઈમ્પોર્ટ ઉમેર્યું
+// ✅ MessagesScreen ઈમ્પોર્ટ કરેલું છે
 import MessagesScreen from './screens/MessagesScreen';
 
 export default function App() {
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showSplash, setShowSplash] = useState(true);
 
@@ -71,7 +71,7 @@ export default function App() {
     return <SplashScreen />;
   }
 
-  const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const ProtectedRoute = ({ children }) => {
     if (!session) {
       return <Navigate to="/" replace />;
     }
@@ -94,9 +94,11 @@ export default function App() {
         <Route path="/matrimony" element={<ProtectedRoute><MatrimonyScreen /></ProtectedRoute>} />
         <Route path="/requests" element={<ProtectedRoute><RequestsScreen /></ProtectedRoute>} />
         
-        {/* ✅ ચેટ માટેના ૨ રાઉટ્સ સુધાર્યા */}
+        {/* ✅ ચેટ માટેના રાઉટ્સ (બંને લિંક સપોર્ટ કરશે) */}
         <Route path="/messages" element={<ProtectedRoute><MessagesScreen /></ProtectedRoute>} />
         <Route path="/chat/:roomId" element={<ProtectedRoute><PrivateChatScreen /></ProtectedRoute>} />
+        {/* 👇 આ જૂની લિંક ઉમેરી જેથી જૂના પેજ પરથી પણ ચેટ ખૂલે 👇 */}
+        <Route path="/private-chat/:roomId" element={<ProtectedRoute><PrivateChatScreen /></ProtectedRoute>} />
         
         <Route path="/general-chat" element={<ProtectedRoute><GeneralChatScreen /></ProtectedRoute>} />
         <Route path="/education" element={<ProtectedRoute><EducationHubScreen /></ProtectedRoute>} />
