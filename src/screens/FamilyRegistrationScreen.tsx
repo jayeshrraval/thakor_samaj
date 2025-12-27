@@ -153,7 +153,8 @@ export default function FamilyRegistrationScreen() {
   const removeMember = async (id: string) => {
     if (members.length === 1) return;
     
-    if (!id.startsWith('new-')) {
+    // ✅ UUID FIX: જો ID માં "new-" ના હોય તો જ ડેટાબેઝમાંથી ડિલીટ કરવું
+    if (!id.toString().startsWith('new-')) {
        if(confirm("શું તમે આ સભ્યને કાયમી માટે ડીલીટ કરવા માંગો છો?")) {
           await supabase.from('families').delete().eq('id', id);
        } else {
@@ -196,7 +197,9 @@ export default function FamilyRegistrationScreen() {
                 gender: m.gender,
                 member_mobile: m.memberMobile
             };
-            if (!m.id.startsWith('new-')) {
+            
+            // ✅ UUID FIX: જો ID અસલી UUID (જે "new-" થી શરૂ નથી થતી) હોય તો જ મોકલવી
+            if (m.id && !m.id.toString().startsWith('new-')) {
                 baseObj.id = m.id;
             }
             return baseObj;
