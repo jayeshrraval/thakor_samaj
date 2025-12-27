@@ -73,13 +73,15 @@ export default function FamilyRegistrationScreen() {
         return;
       }
 
-      // ૧. લોગિન થયેલા યુઝરનો મોબાઈલ નંબર મેળવો
-      let userMobile = user.phone || user.user_metadata?.mobile_number || '';
+      // ૧. લોગિન થયેલા યુઝરનો મોબાઈલ નંબર મેળવો (ઈમેઈલ કે ફોન ગમે તેમાંથી)
+      // ✅ સુધારો: તમારા પ્રોફાઈલ મુજબ ઈમેઈલમાંથી નંબર પકડશે
+      let rawMobile = user.phone || user.email || user.user_metadata?.mobile_number || '';
       
-      // નંબર ક્લીન કરો (છેલ્લા ૧૦ આંકડા)
-      if (userMobile.length > 10) {
-        userMobile = userMobile.slice(-10);
-      }
+      // ૨. ✅ પાવરફુલ લોજિક: ઈમેઈલ કે ફોનમાંથી ફક્ત ૧૦ આંકડા જ પકડશે
+      const userMobile = rawMobile.replace(/[^0-9]/g, '').slice(-10);
+
+      // ૩. ટેસ્ટિંગ એલર્ટ: જે તમને મોબાઈલમાં દેખાશે
+      alert("તમારો લોગિન નંબર આ રીતે સર્ચ થશે: " + userMobile);
 
       // જો મોબાઈલ નંબર જ ના હોય તો ફોર્મ ખાલી રાખો
       if (!userMobile) {
@@ -89,10 +91,9 @@ export default function FamilyRegistrationScreen() {
       }
 
       // ૨. ડેટાબેઝમાં શોધો: ફક્ત હાલના યુઝર માટે (user_id OR mobile_number)
-      // આ ક્વેરી ચેક કરશે કે આ નંબર ફેમિલી લિસ્ટમાં છે કે નહીં
       const { data: matchedRows } = await supabase
         .from('families')
-        .select('*') // બધો ડેટા અહીં જ લઈ લીધો
+        .select('*') 
         .or(`user_id.eq.${user.id},mobile_number.ilike.%${userMobile}%,member_mobile.ilike.%${userMobile}%`)
         .limit(1);
 
@@ -109,14 +110,10 @@ export default function FamilyRegistrationScreen() {
         setTaluko(head.taluko || '');
         setDistrict(head.district || '');
 
-        // ૪. સભ્યોનો ડેટા લોડ કરો (જો main table માં જ JSON હોય તો ત્યાંથી, અથવા અલગ ટેબલ હોય તો ત્યાંથી)
-        // તમારી જૂની પેટર્ન મુજબ, હું માનું છું કે તમે 'families' ટેબલમાંથી જ બધું લાવો છો. 
-        // જો સભ્યો અલગ રો (row) માં હોય તો નીચે મુજબ લોજિક આવે:
-        
         const { data: familyMembers } = await supabase
              .from('families')
              .select('*')
-             .eq('user_id', head.user_id || user.id); // અથવા head_name/mobile થી ગ્રુપ કરો
+             .eq('user_id', head.user_id || user.id);
 
         if (familyMembers && familyMembers.length > 0) {
             const loadedMembers = familyMembers.map((m: any) => ({
@@ -125,17 +122,15 @@ export default function FamilyRegistrationScreen() {
                 relationship: m.relationship || '',
                 gender: m.gender || '',
                 memberMobile: m.member_mobile || ''
-            })).filter((m: any) => m.memberName); // ખાલી નામ વાળા કાઢી નાખો
+            })).filter((m: any) => m.memberName);
 
             if (loadedMembers.length > 0) {
                 setMembers(loadedMembers);
             } else {
-                 // જો સભ્યો ના મળે પણ હેડ મળે, તો એક ખાલી સભ્ય રાખો
                  setMembers([{ id: Date.now().toString(), memberName: '', relationship: '', gender: '', memberMobile: '' }]);
             }
         }
       } else {
-        // ❌ અગત્યનું: જો ડેટા ના મળે, તો ફોર્મ ક્લીન કરો (Reset)
         resetForm();
       }
     } catch (error) {
@@ -153,7 +148,6 @@ export default function FamilyRegistrationScreen() {
   const removeMember = async (id: string) => {
     if (members.length === 1) return;
     
-    // ✅ UUID FIX: જો ID માં "new-" ના હોય તો જ ડેટાબેઝમાંથી ડિલીટ કરવું
     if (!id.toString().startsWith('new-')) {
        if(confirm("શું તમે આ સભ્યને કાયમી માટે ડીલીટ કરવા માંગો છો?")) {
           await supabase.from('families').delete().eq('id', id);
@@ -198,7 +192,6 @@ export default function FamilyRegistrationScreen() {
                 member_mobile: m.memberMobile
             };
             
-            // ✅ UUID FIX: જો ID અસલી UUID (જે "new-" થી શરૂ નથી થતી) હોય તો જ મોકલવી
             if (m.id && !m.id.toString().startsWith('new-')) {
                 baseObj.id = m.id;
             }
@@ -283,7 +276,6 @@ export default function FamilyRegistrationScreen() {
       </div>
 
       <div className="px-5 py-6 space-y-6 font-gujarati">
-        {/* --- મુખ્ય માહિતી સેક્શન --- */}
         <div className="bg-white p-6 rounded-[30px] shadow-sm space-y-4 border border-gray-100">
           <h2 className="font-bold text-gray-800 flex items-center gap-2 text-lg"><User size={20} className="text-deep-blue"/> મુખ્ય માહિતી</h2>
           
@@ -305,7 +297,6 @@ export default function FamilyRegistrationScreen() {
           <input type="text" value={gol} onChange={(e) => setGol(e.target.value)} placeholder="ગોળ (દા.ત. કાશ્યપ) *" className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-mint" />
         </div>
 
-        {/* --- સભ્યોની યાદી સેક્શન --- */}
         <div className="bg-white p-6 rounded-[30px] shadow-sm space-y-4 border border-gray-100">
           <h2 className="font-bold text-gray-800 flex items-center gap-2 text-lg"><Users size={20} className="text-deep-blue"/> સભ્યોની યાદી</h2>
           <div className="space-y-4">
