@@ -73,11 +73,12 @@ export default function MatrimonyScreen() {
       if (!user) return alert('લોગીન કરો.');
 
       // ૧. બંને દિશામાં ચેક કરો: (હું -> સામે વાળો) અથવા (સામે વાળો -> હું)
+      // આ ક્વેરી ડેટાબેઝમાં તપાસશે કે કોઈ પણ સંબંધ છે કે નહીં
       const { data: existingRequest, error: checkError } = await supabase
         .from('requests')
         .select('*')
         .or(`and(sender_id.eq.${user.id},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${user.id})`)
-        .single();
+        .maybeSingle(); // maybeSingle વાપરવું વધુ સુરક્ષિત છે
 
       // જો કોઈ પણ ડેટા મળે, તો તેનો અર્થ કે સંબંધ/રિક્વેસ્ટ ઓલરેડી છે
       if (existingRequest) {
@@ -103,10 +104,7 @@ export default function MatrimonyScreen() {
 
       alert('રિક્વેસ્ટ સફળતાપૂર્વક મોકલાઈ ગઈ! 🎉');
     } catch (error: any) {
-      // PGRST116 means 'no rows found', which is good here (no existing request)
-      if (error.code !== 'PGRST116') {
-         alert('ભૂલ આવી: ' + error.message);
-      }
+      alert('ભૂલ આવી: ' + error.message);
     }
   };
 
