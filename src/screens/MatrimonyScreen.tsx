@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Heart, Loader2, User, MapPin, Briefcase, GraduationCap, Camera, Bell, ArrowLeft } from 'lucide-react';
+import { Search, Heart, Loader2, User, MapPin, Briefcase, GraduationCap, Camera, Bell, ArrowLeft, Users, Lock, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
-import { supabase } from '../supabaseClient'; 
+import { supabase } from '../supabaseClient';
 
 type TabType = 'list' | 'detail' | 'myprofile';
 
@@ -15,6 +15,10 @@ export default function MatrimonyScreen() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
+
+  // ✅ ફેમિલી વેરીફીકેશન સ્ટેટ
+  const [isFamilyVerified, setIsFamilyVerified] = useState<boolean | null>(null);
+  const [familyData, setFamilyData] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -36,8 +40,87 @@ export default function MatrimonyScreen() {
 
   useEffect(() => {
     fetchProfiles();
-    fetchMyProfile();
+    checkFamilyAndProfileStatus();
   }, []);
+
+  // 🔥 જબરદસ્ત લોજિક: મોબાઈલ નંબરથી મેચિંગ 🔥
+  const checkFamilyAndProfileStatus = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // ૧. પહેલા ચેક કરો કે મેટ્રિમોની પ્રોફાઈલ છે કે નહીં? (આ તો user_id થી જ ચેક થશે કારણ કે એ તેણે પોતે બનાવી છે)
+      const { data: matProfile } = await supabase
+        .from('matrimony_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (matProfile) {
+        setFormData({ ...matProfile, age: matProfile.age?.toString() || '' });
+        setHasProfile(true);
+        setIsFamilyVerified(true);
+        return;
+      }
+
+      // ૨. હવે ફેમિલીમાં ચેક કરો (મોબાઈલ નંબરથી)
+      // લોગીન યુઝરનો ફોન નંબર લો
+      let userPhone = user.phone || user.user_metadata?.mobile_number || '';
+
+      if (!userPhone) {
+        // જો ફોન નંબર ના હોય તો ના પાડી દો (ઈમેલથી લોગીન હોય તો પ્રોબ્લેમ થઈ શકે)
+        console.log("No phone number found in auth");
+        setIsFamilyVerified(false);
+        return;
+      }
+
+      // નંબર ક્લીન કરો: +91 કાઢી નાખો, સ્પેસ કાઢી નાખો, છેલ્લા 10 આંકડા લો
+      // ઉદાહરણ: "+91 98765 43210" -> "9876543210"
+      const cleanPhone = userPhone.replace('+91', '').replace(/\D/g, '').slice(-10);
+
+      console.log("Checking family for phone:", cleanPhone);
+
+      const { data: familyMember } = await supabase
+        .from('family_members')
+        .select(`
+            *,
+            families ( village, district, taluka, gol )
+        `)
+        .eq('mobile_number', cleanPhone) // ✅ અહીં નામ નહિ, મોબાઈલ નંબરથી મેચ થાય છે
+        .maybeSingle();
+
+      if (familyMember) {
+        setIsFamilyVerified(true);
+        setFamilyData(familyMember);
+        
+        // ૩. ડેટા ઓટોમેટિક ભરી દો
+        setFormData(prev => ({
+          ...prev,
+          full_name: familyMember.full_name || '',
+          education: familyMember.education || '',
+          occupation: familyMember.occupation || '',
+          village: familyMember.families?.village || '',
+          taluka: familyMember.families?.taluka || '',
+          district: familyMember.families?.district || '',
+          gol: familyMember.families?.gol || '',
+          age: calculateAge(familyMember.dob) || '' 
+        }));
+      } else {
+        setIsFamilyVerified(false); // ❌ મોબાઈલ નંબર ફેમિલી લિસ્ટમાં નથી મળ્યો
+      }
+
+    } catch (error) {
+      console.error('Check Error:', error);
+    }
+  };
+
+  const calculateAge = (dobString: string) => {
+    if (!dobString) return '';
+    const birthDate = new Date(dobString);
+    const difference = Date.now() - birthDate.getTime();
+    const ageDate = new Date(difference);
+    return Math.abs(ageDate.getUTCFullYear() - 1970).toString();
+  };
 
   const fetchProfiles = async () => {
     setLoading(true);
@@ -49,59 +132,34 @@ export default function MatrimonyScreen() {
     setLoading(false);
   };
 
-  const fetchMyProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await supabase.from('matrimony_profiles').select('*').eq('user_id', user.id).maybeSingle();
-      if (data) {
-        setFormData({ ...data, age: data.age?.toString() || '' });
-        setHasProfile(true);
-      }
-    }
-  };
-
-  // ✅ અપડેટ કરેલું ફંક્શન: બંને બાજુ ચેક કરશે (Sender <-> Receiver)
   const handleSendRequest = async (receiverId: string) => {
     if (!hasProfile) {
-      alert("તમે રિક્વેસ્ટ મોકલી શકતા નથી! પહેલા 'મારી પ્રોફાઇલ'માં જઈને તમારી વિગતો ભરો.");
+      alert("તમે રિક્વેસ્ટ મોકલી શકતા નથી! પહેલા 'મારી પ્રોફાઇલ' બનાવો.");
       setActiveTab('myprofile');
       return;
     }
-
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return alert('લોગીન કરો.');
-
-      // ૧. બંને દિશામાં ચેક કરો: (હું -> સામે વાળો) અથવા (સામે વાળો -> હું)
-      // આ ક્વેરી ડેટાબેઝમાં તપાસશે કે કોઈ પણ સંબંધ છે કે નહીં
-      const { data: existingRequest, error: checkError } = await supabase
+      
+      const { data: existingRequest } = await supabase
         .from('requests')
         .select('*')
         .or(`and(sender_id.eq.${user.id},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${user.id})`)
-        .maybeSingle(); // maybeSingle વાપરવું વધુ સુરક્ષિત છે
+        .maybeSingle();
 
-      // જો કોઈ પણ ડેટા મળે, તો તેનો અર્થ કે સંબંધ/રિક્વેસ્ટ ઓલરેડી છે
       if (existingRequest) {
-        if (existingRequest.status === 'accepted') {
-           alert('તમે બંને પહેલેથી જ કનેક્ટેડ છો! ચેટ બોક્સ ચેક કરો. ✅');
-        } else if (existingRequest.sender_id === user.id) {
-           alert('તમે પહેલેથી જ રિક્વેસ્ટ મોકલેલી છે! ⏳');
-        } else {
-           alert('સામે વાળાએ તમને પહેલેથી રિક્વેસ્ટ મોકલી છે! રિક્વેસ્ટ લિસ્ટ ચેક કરો. 📩');
-        }
-        return; // અહીંથી અટકી જાઓ, નવી રિક્વેસ્ટ ના બનાવો
+        if (existingRequest.status === 'accepted') alert('તમે બંને પહેલેથી જ કનેક્ટેડ છો! ✅');
+        else if (existingRequest.sender_id === user.id) alert('રિક્વેસ્ટ મોકલેલી છે! ⏳');
+        else alert('સામે વાળાએ રિક્વેસ્ટ મોકલી છે! 📩');
+        return;
       }
 
-      // ૨. જો કોઈ સંબંધ ના હોય, તો જ નવી રિક્વેસ્ટ બનાવો
       const { error } = await supabase
         .from('requests')
         .insert([{ sender_id: user.id, receiver_id: receiverId, status: 'pending' }]);
 
-      if (error) {
-        if (error.code === '23505') return alert('તમે આ વ્યક્તિને પહેલાથી રિક્વેસ્ટ મોકલી દીધી છે.');
-        throw error;
-      }
-
+      if (error) throw error;
       alert('રિક્વેસ્ટ સફળતાપૂર્વક મોકલાઈ ગઈ! 🎉');
     } catch (error: any) {
       alert('ભૂલ આવી: ' + error.message);
@@ -109,7 +167,7 @@ export default function MatrimonyScreen() {
   };
 
   const handleImageUpload = async (event: any) => {
-    try {
+      try {
       setUploading(true);
       const file = event.target.files[0];
       if (!file) return;
@@ -131,7 +189,7 @@ export default function MatrimonyScreen() {
   };
 
   const handleSaveProfile = async () => {
-    try {
+     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -198,106 +256,138 @@ export default function MatrimonyScreen() {
         )}
 
         {activeTab === 'myprofile' && (
-          <div className="bg-white p-6 rounded-[35px] shadow-sm border border-gray-100 space-y-6">
-            <div className="flex flex-col items-center mb-4">
-              <div className="relative group">
-                <div className="w-32 h-32 rounded-3xl bg-gray-50 border-2 border-dashed border-pink-200 overflow-hidden flex items-center justify-center shadow-inner">
-                  {formData.image_url ? <img src={formData.image_url} alt="Profile" className="w-full h-full object-cover" /> : <User className="w-12 h-12 text-pink-100" />}
+            // ✅ ફેમિલી વેરીફીકેશન ચેક
+            isFamilyVerified === false ? (
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                    <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-4 animate-pulse">
+                        <Lock className="w-10 h-10 text-red-500" />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-800 mb-2">પ્રોફાઈલ બનાવી શકાતી નથી</h2>
+                    <p className="text-gray-500 text-sm mb-6 max-w-xs leading-relaxed">
+                        અમારો રેકોર્ડ કહે છે કે તમારો મોબાઈલ નંબર 'પરિવાર લિસ્ટ'માં નથી. લગ્ન પ્રોફાઈલ બનાવવા માટે તમારું ફેમિલી રજીસ્ટ્રેશન હોવું જરૂરી છે.
+                    </p>
+                    <button 
+                        onClick={() => navigate('/family-list')}
+                        className="bg-deep-blue text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 active:scale-95 transition-all shadow-lg hover:bg-blue-800"
+                    >
+                        <Users size={20} />
+                        પરિવાર લિસ્ટમાં જોડાવો
+                    </button>
                 </div>
-                <label className="absolute -bottom-2 -right-2 bg-pink-600 p-3 rounded-2xl shadow-lg cursor-pointer active:scale-90 transition-transform">
-                  {uploading ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Camera className="w-5 h-5 text-white" />}
-                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                </label>
-              </div>
-            </div>
+            ) : (
+                // જો ફેમિલીમાં હોય તો ફોર્મ ખૂલશે
+                <div className="bg-white p-6 rounded-[35px] shadow-sm border border-gray-100 space-y-6">
+                     {familyData && !hasProfile && (
+                         <div className="bg-green-50 p-4 rounded-xl flex items-start gap-3 border border-green-100">
+                             <CheckCircle className="text-green-600 w-5 h-5 shrink-0 mt-0.5" />
+                             <div>
+                                <p className="text-sm text-green-800 font-bold">વેરીફાઈડ મેમ્બર ✅</p>
+                                <p className="text-xs text-green-700 mt-1">
+                                    તમારો મોબાઈલ નંબર પરિવાર લિસ્ટ સાથે મેચ થયો છે. તમારી વિગતો ઓટોમેટિક ભરાઈ ગઈ છે.
+                                </p>
+                             </div>
+                         </div>
+                     )}
 
-            <div className="space-y-4">
-              <h3 className="font-bold text-gray-800 border-b pb-2 text-lg uppercase tracking-wider">વ્યક્તિગત માહિતી</h3>
-              
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">લગ્ન સ્થિતિ</label>
-                <select 
-                  value={formData.marital_status}
-                  onChange={(e) => setFormData({...formData, marital_status: e.target.value})}
-                  className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 outline-none focus:ring-2 focus:ring-pink-500 border-none mt-1 shadow-inner appearance-none"
-                >
-                  <option value="અપરિણીત">અપરિણીત</option>
-                  <option value="વિધવા">વિધવા</option>
-                  <option value="વિધુર">વિધુર</option>
-                  <option value="છૂટાછેડા">છૂટાછેડા</option>
-                </select>
-              </div>
+                    <div className="flex flex-col items-center mb-4">
+                    <div className="relative group">
+                        <div className="w-32 h-32 rounded-3xl bg-gray-50 border-2 border-dashed border-pink-200 overflow-hidden flex items-center justify-center shadow-inner">
+                        {formData.image_url ? <img src={formData.image_url} alt="Profile" className="w-full h-full object-cover" /> : <User className="w-12 h-12 text-pink-100" />}
+                        </div>
+                        <label className="absolute -bottom-2 -right-2 bg-pink-600 p-3 rounded-2xl shadow-lg cursor-pointer active:scale-90 transition-transform">
+                        {uploading ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Camera className="w-5 h-5 text-white" />}
+                        <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                        </label>
+                    </div>
+                    </div>
 
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">પૂરું નામ</label>
-                <input type="text" value={formData.full_name} onChange={(e) => setFormData({...formData, full_name: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="નામ લખો" />
-              </div>
+                    <div className="space-y-4">
+                    <h3 className="font-bold text-gray-800 border-b pb-2 text-lg uppercase tracking-wider">વ્યક્તિગત માહિતી</h3>
+                    
+                    {/* ફોર્મ ફિલ્ડ્સ */}
+                    <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">લગ્ન સ્થિતિ</label>
+                        <select 
+                        value={formData.marital_status}
+                        onChange={(e) => setFormData({...formData, marital_status: e.target.value})}
+                        className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 outline-none focus:ring-2 focus:ring-pink-500 border-none mt-1 shadow-inner appearance-none"
+                        >
+                        <option value="અપરિણીત">અપરિણીત</option>
+                        <option value="વિધવા">વિધવા</option>
+                        <option value="વિધુર">વિધુર</option>
+                        <option value="છૂટાછેડા">છૂટાછેડા</option>
+                        </select>
+                    </div>
 
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">પિતાનું નામ</label>
-                <input type="text" value={formData.father_name} onChange={(e) => setFormData({...formData, father_name: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="પિતાનું નામ લખો" />
-              </div>
+                    <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">પૂરું નામ</label>
+                        <input type="text" value={formData.full_name} onChange={(e) => setFormData({...formData, full_name: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="નામ લખો" />
+                    </div>
 
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">માતાનું નામ</label>
-                <input type="text" value={formData.mother_name} onChange={(e) => setFormData({...formData, mother_name: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="માતાનું નામ લખો" />
-              </div>
+                    <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">પિતાનું નામ</label>
+                        <input type="text" value={formData.father_name} onChange={(e) => setFormData({...formData, father_name: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="પિતાનું નામ લખો" />
+                    </div>
 
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">પેટા અટક</label>
-                <input type="text" value={formData.peta_atak} onChange={(e) => setFormData({...formData, peta_atak: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="પેટા અટક લખો" />
-              </div>
+                    <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">માતાનું નામ</label>
+                        <input type="text" value={formData.mother_name} onChange={(e) => setFormData({...formData, mother_name: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="માતાનું નામ લખો" />
+                    </div>
+                     <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">પેટા અટક</label>
+                        <input type="text" value={formData.peta_atak} onChange={(e) => setFormData({...formData, peta_atak: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="પેટા અટક લખો" />
+                    </div>
+                    <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">માતાની પેટા અટક</label>
+                        <input type="text" value={formData.mother_peta_atak} onChange={(e) => setFormData({...formData, mother_peta_atak: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="માતાની પેટા અટક લખો" />
+                    </div>
 
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">માતાની પેટા અટક</label>
-                <input type="text" value={formData.mother_peta_atak} onChange={(e) => setFormData({...formData, mother_peta_atak: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="માતાની પેટા અટક લખો" />
-              </div>
+                    <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">ગોળ</label>
+                        <input type="text" value={formData.gol} onChange={(e) => setFormData({...formData, gol: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="ગોળ લખો" />
+                    </div>
 
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">ગોળ</label>
-                <input type="text" value={formData.gol} onChange={(e) => setFormData({...formData, gol: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="ગોળ લખો" />
-              </div>
+                    <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">ઉંમર</label>
+                        <input type="number" value={formData.age} onChange={(e) => setFormData({...formData, age: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="ઉંમર લખો" />
+                    </div>
 
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">ઉંમર</label>
-                <input type="number" value={formData.age} onChange={(e) => setFormData({...formData, age: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="ઉંમર લખો" />
-              </div>
+                    <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">ગામ</label>
+                        <input type="text" value={formData.village} onChange={(e) => setFormData({...formData, village: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="ગામ લખો" />
+                    </div>
 
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">ગામ</label>
-                <input type="text" value={formData.village} onChange={(e) => setFormData({...formData, village: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="ગામ લખો" />
-              </div>
+                    <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">તાલુકો</label>
+                        <input type="text" value={formData.taluka} onChange={(e) => setFormData({...formData, taluka: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="તાલુકો લખો" />
+                    </div>
 
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">તાલુકો</label>
-                <input type="text" value={formData.taluka} onChange={(e) => setFormData({...formData, taluka: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="તાલુકો લખો" />
-              </div>
+                    <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">જીલ્લો</label>
+                        <input type="text" value={formData.district} onChange={(e) => setFormData({...formData, district: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="જીલ્લો લખો" />
+                    </div>
 
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">જીલ્લો</label>
-                <input type="text" value={formData.district} onChange={(e) => setFormData({...formData, district: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="જીલ્લો લખો" />
-              </div>
+                    <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">શિક્ષણ</label>
+                        <input type="text" value={formData.education} onChange={(e) => setFormData({...formData, education: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="શિક્ષણ લખો" />
+                    </div>
 
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">શિક્ષણ</label>
-                <input type="text" value={formData.education} onChange={(e) => setFormData({...formData, education: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="શિક્ષણ લખો" />
-              </div>
+                    <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">નોકરી/ધંધો</label>
+                        <input type="text" value={formData.occupation} onChange={(e) => setFormData({...formData, occupation: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="ધંધો લખો" />
+                    </div>
 
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">નોકરી/ધંધો</label>
-                <input type="text" value={formData.occupation} onChange={(e) => setFormData({...formData, occupation: e.target.value})} className="w-full px-5 py-3 bg-gray-50 rounded-2xl font-bold text-gray-700 mt-1 shadow-inner border-none outline-none focus:ring-2 focus:ring-pink-500" placeholder="ધંધો લખો" />
-              </div>
+                    <div className="flex items-center justify-between p-4 bg-pink-50 rounded-2xl mt-4">
+                        <span className="text-sm font-bold text-pink-700 uppercase">કુંડળી ઉપલબ્ધ છે?</span>
+                        <input type="checkbox" className="w-6 h-6 accent-pink-600 rounded" checked={formData.kundali_available} onChange={(e) => setFormData({...formData, kundali_available: e.target.checked})} />
+                    </div>
+                    </div>
 
-              <div className="flex items-center justify-between p-4 bg-pink-50 rounded-2xl mt-4">
-                <span className="text-sm font-bold text-pink-700 uppercase">કુંડળી ઉપલબ્ધ છે?</span>
-                <input type="checkbox" className="w-6 h-6 accent-pink-600 rounded" checked={formData.kundali_available} onChange={(e) => setFormData({...formData, kundali_available: e.target.checked})} />
-              </div>
-            </div>
-
-            <button onClick={handleSaveProfile} disabled={loading} className="w-full bg-pink-600 text-white font-black py-5 rounded-[25px] shadow-lg active:scale-95 transition-all mt-6 uppercase tracking-widest">
-              {loading ? 'સેવ થઈ રહ્યું છે...' : 'મેટ્રિમોની પ્રોફાઇલ સેવ કરો'}
-            </button>
-          </div>
+                    <button onClick={handleSaveProfile} disabled={loading} className="w-full bg-pink-600 text-white font-black py-5 rounded-[25px] shadow-lg active:scale-95 transition-all mt-6 uppercase tracking-widest">
+                    {loading ? 'સેવ થઈ રહ્યું છે...' : 'મેટ્રિમોની પ્રોફાઇલ સેવ કરો'}
+                    </button>
+                </div>
+            )
         )}
 
         {activeTab === 'detail' && (
@@ -318,7 +408,6 @@ export default function MatrimonyScreen() {
                   <DetailRow icon={GraduationCap} label="શિક્ષણ" value={selectedProfile.education} />
                   <DetailRow icon={Heart} label="ગોળ" value={selectedProfile.gol} />
                 </div>
-                {/* અહીં પણ બટનમાં સેમ ફંક્શન કોલ થશે */}
                 <button onClick={() => handleSendRequest(selectedProfile.user_id)} className="w-full mt-6 bg-pink-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all uppercase tracking-widest">રિક્વેસ્ટ મોકલો</button>
               </div>
             ) : <p className="text-center text-gray-400 font-bold mt-10">લિસ્ટમાંથી કોઈ પ્રોફાઇલ પસંદ કરો.</p>}
