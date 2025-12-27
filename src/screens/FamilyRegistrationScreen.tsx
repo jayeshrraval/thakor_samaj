@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Users, Plus, Trash2, MapPin, User, ChevronDown, Check, ArrowLeft, Loader2, Phone } from 'lucide-react'; // Phone icon added
+import { Users, Plus, Trash2, MapPin, User, ChevronDown, Check, ArrowLeft, Loader2, Phone } from 'lucide-react';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../supabaseClient';
 
-// ઈન્ટરફેસમાં મોબાઈલ નંબર ઉમેર્યો
 interface FamilyMember {
   id: string;
   memberName: string;
   relationship: string;
   gender: string;
-  memberMobile: string; // New Field for Member's Mobile
+  memberMobile: string;
 }
 
 const relationshipOptions = [
@@ -32,16 +31,17 @@ export default function FamilyRegistrationScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [loadingData, setLoadingData] = useState(true); // ડેટા લોડિંગ સ્ટેટ
 
+  // ફોર્મ સ્ટેટ્સ
   const [headName, setHeadName] = useState('');
-  const [mobileNumber, setMobileNumber] = useState(''); // New State for Head's Mobile
+  const [mobileNumber, setMobileNumber] = useState('');
   const [subSurname, setSubSurname] = useState('');
   const [gol, setGol] = useState('');
   const [village, setVillage] = useState('');
   const [taluko, setTaluko] = useState('');
   const [district, setDistrict] = useState('');
   
-  // સભ્યોના સ્ટેટમાં memberMobile ઉમેર્યું
   const [members, setMembers] = useState<FamilyMember[]>([
     { id: Date.now().toString(), memberName: '', relationship: '', gender: '', memberMobile: '' },
   ]);
@@ -50,57 +50,99 @@ export default function FamilyRegistrationScreen() {
     loadExistingFamily();
   }, []);
 
-  // ✅ અપડેટ કરેલું લોજિક: મોબાઈલ નંબરથી પણ ફેમિલી શોધશે
+  // ✅ ફોર્મ રીસેટ ફંક્શન (જ્યારે નવો યુઝર હોય ત્યારે બધું ખાલી કરવા)
+  const resetForm = () => {
+    setHeadName('');
+    setMobileNumber('');
+    setSubSurname('');
+    setGol('');
+    setVillage('');
+    setTaluko('');
+    setDistrict('');
+    setMembers([{ id: Date.now().toString(), memberName: '', relationship: '', gender: '', memberMobile: '' }]);
+    setIsEditMode(false);
+  };
+
   const loadExistingFamily = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    // ૧. યુઝરનો મોબાઈલ નંબર લો અને ફોર્મેટ કરો (છેલ્લા ૧૦ આંકડા)
-    let userMobile = user.phone || '';
-    if (userMobile.length > 10) {
-      userMobile = userMobile.slice(-10);
-    }
-
-    // ૨. ડેટાબેઝમાં શોધો: શું આ User ID અથવા આ Mobile Number કોઈ પરિવારમાં છે?
-    const { data: matchedRows } = await supabase
-      .from('families')
-      .select('user_id')
-      .or(`user_id.eq.${user.id},mobile_number.ilike.%${userMobile}%,member_mobile.ilike.%${userMobile}%`)
-      .limit(1);
-
-    // ૩. જો કોઈ પણ રેકોર્ડ મળે, તો એ પરિવારનો મુખ્ય ડેટા લોડ કરો
-    if (matchedRows && matchedRows.length > 0) {
-      const targetUserId = matchedRows[0].user_id;
-
-      if (targetUserId) {
-        const { data } = await supabase
-          .from('families')
-          .select('*')
-          .eq('user_id', targetUserId);
-
-        if (data && data.length > 0) {
-          setIsEditMode(true);
-          const head = data[0]; // મોભીનો ડેટા
-          
-          setHeadName(head.head_name || '');
-          setMobileNumber(head.mobile_number || '');
-          setSubSurname(head.sub_surname || '');
-          setGol(head.gol || '');
-          setVillage(head.village || '');
-          setTaluko(head.taluko || '');
-          setDistrict(head.district || '');
-
-          // સભ્યોનો ડેટા સેટ કરો
-          const loadedMembers = data.map((m: any) => ({
-            id: m.id,
-            memberName: m.member_name,
-            relationship: m.relationship,
-            gender: m.gender,
-            memberMobile: m.member_mobile || ''
-          }));
-          setMembers(loadedMembers);
-        }
+    try {
+      setLoadingData(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        navigate('/');
+        return;
       }
+
+      // ૧. લોગિન થયેલા યુઝરનો મોબાઈલ નંબર મેળવો
+      let userMobile = user.phone || user.user_metadata?.mobile_number || '';
+      
+      // નંબર ક્લીન કરો (છેલ્લા ૧૦ આંકડા)
+      if (userMobile.length > 10) {
+        userMobile = userMobile.slice(-10);
+      }
+
+      // જો મોબાઈલ નંબર જ ના હોય તો ફોર્મ ખાલી રાખો
+      if (!userMobile) {
+        resetForm();
+        setLoadingData(false);
+        return;
+      }
+
+      // ૨. ડેટાબેઝમાં શોધો: ફક્ત હાલના યુઝર માટે (user_id OR mobile_number)
+      // આ ક્વેરી ચેક કરશે કે આ નંબર ફેમિલી લિસ્ટમાં છે કે નહીં
+      const { data: matchedRows } = await supabase
+        .from('families')
+        .select('*') // બધો ડેટા અહીં જ લઈ લીધો
+        .or(`user_id.eq.${user.id},mobile_number.ilike.%${userMobile}%,member_mobile.ilike.%${userMobile}%`)
+        .limit(1);
+
+      // ૩. જો ડેટા મળે તો ફોર્મ ભરો
+      if (matchedRows && matchedRows.length > 0) {
+        const head = matchedRows[0];
+        
+        setIsEditMode(true);
+        setHeadName(head.head_name || '');
+        setMobileNumber(head.mobile_number || '');
+        setSubSurname(head.sub_surname || '');
+        setGol(head.gol || '');
+        setVillage(head.village || '');
+        setTaluko(head.taluko || '');
+        setDistrict(head.district || '');
+
+        // ૪. સભ્યોનો ડેટા લોડ કરો (જો main table માં જ JSON હોય તો ત્યાંથી, અથવા અલગ ટેબલ હોય તો ત્યાંથી)
+        // તમારી જૂની પેટર્ન મુજબ, હું માનું છું કે તમે 'families' ટેબલમાંથી જ બધું લાવો છો. 
+        // જો સભ્યો અલગ રો (row) માં હોય તો નીચે મુજબ લોજિક આવે:
+        
+        const { data: familyMembers } = await supabase
+             .from('families')
+             .select('*')
+             .eq('user_id', head.user_id || user.id); // અથવા head_name/mobile થી ગ્રુપ કરો
+
+        if (familyMembers && familyMembers.length > 0) {
+            const loadedMembers = familyMembers.map((m: any) => ({
+                id: m.id,
+                memberName: m.member_name || '',
+                relationship: m.relationship || '',
+                gender: m.gender || '',
+                memberMobile: m.member_mobile || ''
+            })).filter((m: any) => m.memberName); // ખાલી નામ વાળા કાઢી નાખો
+
+            if (loadedMembers.length > 0) {
+                setMembers(loadedMembers);
+            } else {
+                 // જો સભ્યો ના મળે પણ હેડ મળે, તો એક ખાલી સભ્ય રાખો
+                 setMembers([{ id: Date.now().toString(), memberName: '', relationship: '', gender: '', memberMobile: '' }]);
+            }
+        }
+      } else {
+        // ❌ અગત્યનું: જો ડેટા ના મળે, તો ફોર્મ ક્લીન કરો (Reset)
+        resetForm();
+      }
+    } catch (error) {
+      console.error('Error loading family:', error);
+      resetForm();
+    } finally {
+      setLoadingData(false);
     }
   };
 
@@ -126,7 +168,6 @@ export default function FamilyRegistrationScreen() {
   };
 
   const handleSubmit = async () => {
-    // મોબાઈલ નંબરનું વેલિડેશન ઉમેર્યું
     if (!headName.trim() || !subSurname.trim() || !gol.trim() || !mobileNumber.trim()) {
       alert('મહેરબાની કરીને બધી ફરજિયાત (*) વિગતો ભરો');
       return;
@@ -144,7 +185,7 @@ export default function FamilyRegistrationScreen() {
             const baseObj: any = {
                 user_id: user.id,
                 head_name: headName,
-                mobile_number: mobileNumber, // Save Head's Mobile to every row
+                mobile_number: mobileNumber,
                 sub_surname: subSurname,
                 gol: gol,
                 village: village,
@@ -153,7 +194,7 @@ export default function FamilyRegistrationScreen() {
                 member_name: m.memberName,
                 relationship: m.relationship,
                 gender: m.gender,
-                member_mobile: m.memberMobile // Save Member's Mobile
+                member_mobile: m.memberMobile
             };
             if (!m.id.startsWith('new-')) {
                 baseObj.id = m.id;
@@ -214,6 +255,14 @@ export default function FamilyRegistrationScreen() {
     );
   };
 
+  if (loadingData) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <Loader2 className="w-10 h-10 text-deep-blue animate-spin" />
+        </div>
+      );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 pb-32" onClick={() => setOpenDropdown(null)}>
       <div className="bg-gradient-to-r from-deep-blue to-[#1A8FA3] safe-area-top sticky top-0 z-50 shadow-lg">
@@ -237,7 +286,6 @@ export default function FamilyRegistrationScreen() {
           
           <input type="text" value={headName} onChange={(e) => setHeadName(e.target.value)} placeholder="મોભીનું પૂરું નામ *" className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-mint" />
           
-          {/* મોભીનો મોબાઈલ નંબર ઉમેર્યો */}
           <div className="relative">
             <input 
               type="tel" 
@@ -271,7 +319,6 @@ export default function FamilyRegistrationScreen() {
                 
                 <input type="text" value={member.memberName} onChange={(e) => updateMember(member.id, 'memberName', e.target.value)} placeholder="સભ્યનું પૂરું નામ" className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl" />
                 
-                {/* સભ્યનો મોબાઈલ નંબર ઉમેર્યો */}
                 <input 
                   type="tel" 
                   maxLength={10}
