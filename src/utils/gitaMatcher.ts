@@ -225,66 +225,81 @@ const topicMappings: Record<string, string[]> = {
 };
 
 // ============================================================================
-// 🔍 THE SEARCH ENGINE (ALGORITHM)
+// 🔍 THE DEEP SEARCH ENGINE (WEIGHTED ALGORITHM)
 // ============================================================================
 
-export const findBestShlokas = (userInput: string) => {
-  const searchText = userInput.toLowerCase();
-  
-  // ૧. યુઝરના વાક્યને શબ્દોમાં તોડો (Tokenize)
-  const userWords = searchText.split(" ").filter(w => w.length > 1); 
+// ટેક્સ્ટને સાફ કરવા માટેનું ફંક્શન
+const tokenize = (text: string): string[] => {
+  return text
+    .toLowerCase()
+    .replace(/[?,.!]/g, "") // ચિહ્નો કાઢો
+    .split(" ")
+    .filter(word => word.length > 1); // એક અક્ષરના શબ્દો કાઢો
+};
 
-  // ૨. યુઝરના શબ્દોને ગીતાના કીવર્ડ્સમાં ફેરવો (Mapping)
-  let searchTerms: string[] = [...userWords];
+export const findBestShlokas = (userInput: string) => {
+  // ૧. યુઝરના વાક્યને તોડો
+  const userWords = tokenize(userInput);
+  const fullUserQuery = userInput.toLowerCase();
+  
+  // ૨. ડીપ સર્ચ: સમાનાર્થી શબ્દો શોધો (Synonym Expansion)
+  let expandedQuery: string[] = [...userWords];
   
   userWords.forEach(word => {
+    // A. જો યુઝરનો શબ્દ "કી" તરીકે હોય (દા.ત. "gusso")
+    if (topicMappings[word]) {
+      expandedQuery.push(...topicMappings[word]);
+    }
+
+    // B. જો યુઝરનો શબ્દ "વેલ્યુ" તરીકે હોય (દા.ત. "anger" લખે તો "gusso" પણ શોધવું જોઈએ)
     Object.keys(topicMappings).forEach(key => {
-      if (word.includes(key) || key.includes(word)) { 
-        searchTerms = [...searchTerms, ...topicMappings[key]];
+      if (topicMappings[key].includes(word)) {
+        expandedQuery.push(key); // મેઈન કેટેગરી ઉમેરો
+        expandedQuery.push(...topicMappings[key]); // તેના બીજા ભાઈ-ભાંડુ ઉમેરો
       }
     });
   });
 
-  // ૩. ડુપ્લિકેટ શબ્દો કાઢી નાખો
-  searchTerms = [...new Set(searchTerms)];
+  // ડુપ્લીકેટ શબ્દો કાઢી નાખો
+  const uniqueSearchTerms = [...new Set(expandedQuery)];
 
-  console.log("Searching for:", searchTerms); 
+  console.log("Deep Search Terms:", uniqueSearchTerms); 
 
-  // ૪. ૭૦૦ શ્લોકને સ્કોર આપો
+  // ૩. સ્કોરિંગ સિસ્ટમ (Weighted Scoring)
   const scoredShlokas = gitaData.map((item) => {
     let score = 0;
-    
-    // આખા શ્લોકના ડેટાને એક સ્ટ્રિંગમાં લો
-    const content = `
-      ${item.keywords.join(" ")} 
-      ${item.explanation} 
-      ${item.gujarati_meaning} 
-      ${item.sanskrit}
-    `.toLowerCase();
 
-    searchTerms.forEach(term => {
-      if (content.includes(term)) {
-        if (item.keywords.some(k => k === term)) {
-          score += 15; 
-        } else if (item.keywords.some(k => k.includes(term))) {
-          score += 10; 
-        } else if (item.explanation.toLowerCase().includes(term)) {
-          score += 5;  
-        } else if (item.gujarati_meaning.toLowerCase().includes(term)) {
-          score += 3;  
-        } else {
-          score += 1;
-        }
+    // A. કીવર્ડ મેચિંગ (સૌથી વધુ મહત્વ - 10 પોઈન્ટ્સ)
+    // આ લૂપ ચેક કરશે કે શ્લોકના કીવર્ડ્સમાં આપણા સર્ચ ટર્મ્સ છે?
+    item.keywords.forEach(keyword => {
+      if (uniqueSearchTerms.includes(keyword.toLowerCase())) {
+        score += 10;
       }
     });
+
+    // B. અર્થમાં મેચિંગ (મધ્યમ મહત્વ - 5 પોઈન્ટ્સ)
+    // શ્લોકના અર્થમાં કોઈ શબ્દ મેચ થાય છે?
+    const meaningWords = tokenize(item.gujarati_meaning + " " + item.explanation);
+    meaningWords.forEach(word => {
+      if (uniqueSearchTerms.includes(word)) {
+        score += 2; 
+      }
+    });
+
+    // C. Exact Phrase Match (જેકપોટ - 20 પોઈન્ટ્સ)
+    // જો યુઝરે લખેલું આખું વાક્ય ક્યાંક મેચ થાય
+    if (item.explanation.toLowerCase().includes(fullUserQuery) || item.gujarati_meaning.toLowerCase().includes(fullUserQuery)) {
+      score += 20;
+    }
 
     return { ...item, score };
   });
 
-  // ૫. રિઝલ્ટ સોર્ટ કરો
+  // ૪. સ્કોર પ્રમાણે સોર્ટ કરો (જેનો સ્કોર વધારે તે પહેલા)
   const results = scoredShlokas
-    .filter(item => item.score > 0)
+    .filter(item => item.score > 0) // ઝીરો સ્કોર વાળા કાઢી નાખો
     .sort((a, b) => b.score - a.score); 
 
+  // ટોપ ૩ રિઝલ્ટ આપો
   return results.slice(0, 3);
 };
