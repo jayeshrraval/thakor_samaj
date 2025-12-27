@@ -50,7 +50,7 @@ export default function FamilyRegistrationScreen() {
     loadExistingFamily();
   }, []);
 
-  // ✅ ફોર્મ રીસેટ ફંક્શન (જ્યારે નવો યુઝર હોય ત્યારે બધું ખાલી કરવા)
+  // ✅ ફોર્મ રીસેટ ફંક્શન
   const resetForm = () => {
     setHeadName('');
     setMobileNumber('');
@@ -63,6 +63,7 @@ export default function FamilyRegistrationScreen() {
     setIsEditMode(false);
   };
 
+  // 🔥 UPDATED LOGIC: Search primarily by Mobile Number
   const loadExistingFamily = async () => {
     try {
       setLoadingData(true);
@@ -73,74 +74,69 @@ export default function FamilyRegistrationScreen() {
         return;
       }
 
-      // ૧. લોગિન થયેલા યુઝરનો મોબાઈલ નંબર મેળવો
+      // ૧. લોગિન થયેલા યુઝરનો મોબાઈલ નંબર મેળવો અને સાફ કરો
       let userMobile = user.phone || user.user_metadata?.mobile_number || '';
-      
-      // નંબર ક્લીન કરો (છેલ્લા ૧૦ આંકડા)
-      if (userMobile.length > 10) {
-        userMobile = userMobile.slice(-10);
-      }
+      userMobile = userMobile.replace(/[^0-9]/g, '').slice(-10);
 
       // જો મોબાઈલ નંબર જ ના હોય તો ફોર્મ ખાલી રાખો
       if (!userMobile) {
-        resetForm();
         setLoadingData(false);
         return;
       }
 
-      // ૨. ડેટાબેઝમાં શોધો: ફક્ત હાલના યુઝર માટે (user_id OR mobile_number)
-      // આ ક્વેરી ચેક કરશે કે આ નંબર ફેમિલી લિસ્ટમાં છે કે નહીં
-      const { data: matchedRows } = await supabase
+      // ૨. ડેટાબેઝમાં શોધો: આ નંબર કોઈ પણ રો (Row) માં છે? (Head or Member)
+      const { data: myRecord, error } = await supabase
         .from('families')
-        .select('*') // બધો ડેટા અહીં જ લઈ લીધો
-        .or(`user_id.eq.${user.id},mobile_number.ilike.%${userMobile}%,member_mobile.ilike.%${userMobile}%`)
-        .limit(1);
+        .select('*')
+        .or(`mobile_number.ilike.%${userMobile}%,member_mobile.ilike.%${userMobile}%`)
+        .limit(1)
+        .maybeSingle();
 
-      // ૩. જો ડેટા મળે તો ફોર્મ ભરો
-      if (matchedRows && matchedRows.length > 0) {
-        const head = matchedRows[0];
-        
-        setIsEditMode(true);
-        setHeadName(head.head_name || '');
-        setMobileNumber(head.mobile_number || '');
-        setSubSurname(head.sub_surname || '');
-        setGol(head.gol || '');
-        setVillage(head.village || '');
-        setTaluko(head.taluko || '');
-        setDistrict(head.district || '');
+      if (error) throw error;
 
-        // ૪. સભ્યોનો ડેટા લોડ કરો (જો main table માં જ JSON હોય તો ત્યાંથી, અથવા અલગ ટેબલ હોય તો ત્યાંથી)
-        // તમારી જૂની પેટર્ન મુજબ, હું માનું છું કે તમે 'families' ટેબલમાંથી જ બધું લાવો છો. 
-        // જો સભ્યો અલગ રો (row) માં હોય તો નીચે મુજબ લોજિક આવે:
-        
-        const { data: familyMembers } = await supabase
-             .from('families')
-             .select('*')
-             .eq('user_id', head.user_id || user.id); // અથવા head_name/mobile થી ગ્રુપ કરો
+      // ૩. જો રેકોર્ડ મળે, તો તેનો ઉપયોગ કરીને આખો પરિવાર ખેંચી લાવો
+      if (myRecord) {
+        // જે રેકોર્ડ મળ્યો તેમાંથી 'મોભીનો નંબર' અને 'ગામ' પકડી લો (Family Grouping Keys)
+        const headMobile = myRecord.mobile_number; 
+        const village = myRecord.village;
 
-        if (familyMembers && familyMembers.length > 0) {
-            const loadedMembers = familyMembers.map((m: any) => ({
-                id: m.id,
-                memberName: m.member_name || '',
-                relationship: m.relationship || '',
-                gender: m.gender || '',
-                memberMobile: m.member_mobile || ''
-            })).filter((m: any) => m.memberName); // ખાલી નામ વાળા કાઢી નાખો
+        // હવે એ જ ગામ અને મોભીના નંબર વાળા બધા સભ્યો લાવો
+        const { data: fullFamily } = await supabase
+          .from('families')
+          .select('*')
+          .eq('mobile_number', headMobile) 
+          .eq('village', village);        
 
-            if (loadedMembers.length > 0) {
-                setMembers(loadedMembers);
-            } else {
-                 // જો સભ્યો ના મળે પણ હેડ મળે, તો એક ખાલી સભ્ય રાખો
-                 setMembers([{ id: Date.now().toString(), memberName: '', relationship: '', gender: '', memberMobile: '' }]);
-            }
+        if (fullFamily && fullFamily.length > 0) {
+          setIsEditMode(true);
+          
+          // ડેટા ભરવાનું ચાલુ કરો (પહેલી રો માંથી હેડની વિગત લો)
+          const headData = fullFamily[0];
+          setHeadName(headData.head_name || '');
+          setMobileNumber(headData.mobile_number || '');
+          setSubSurname(headData.sub_surname || '');
+          setGol(headData.gol || '');
+          setVillage(headData.village || '');
+          setTaluko(headData.taluko || '');
+          setDistrict(headData.district || '');
+
+          // સભ્યોનું લિસ્ટ સેટ કરો
+          const loadedMembers = fullFamily.map((m: any) => ({
+             id: m.id,
+             memberName: m.member_name || '',
+             relationship: m.relationship || '',
+             gender: m.gender || '',
+             memberMobile: m.member_mobile || ''
+          }));
+
+          setMembers(loadedMembers);
         }
       } else {
-        // ❌ અગત્યનું: જો ડેટા ના મળે, તો ફોર્મ ક્લીન કરો (Reset)
-        resetForm();
+        // જો નંબર મેચ ના થાય તો નવો યુઝર છે એમ માનીને ફોર્મ ખાલી રાખો
+        // resetForm(); // Optional: If you want to force clear
       }
     } catch (error) {
       console.error('Error loading family:', error);
-      resetForm();
     } finally {
       setLoadingData(false);
     }
@@ -183,7 +179,7 @@ export default function FamilyRegistrationScreen() {
         .filter((m) => m.memberName.trim())
         .map((m) => {
             const baseObj: any = {
-                user_id: user.id,
+                user_id: user.id, // Current User ID (Log purpose)
                 head_name: headName,
                 mobile_number: mobileNumber,
                 sub_surname: subSurname,
