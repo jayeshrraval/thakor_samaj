@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Search, Users, MapPin, ChevronRight, ArrowLeft, 
-  Loader2, UserPlus, Trash2, Edit2, Phone // ✅ Phone આઈકોન ઉમેર્યો
+  Loader2, UserPlus, Trash2, Edit2, Phone 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../supabaseClient';
@@ -13,12 +13,17 @@ export default function FamilyListScreen() {
   const [families, setFamilies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentUserId, setCurrentUserId] = useState(null);
+  const [userMobile, setUserMobile] = useState(null); // ✅ યુઝર આઈડીને બદલે મોબાઈલ નંબર
 
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) setCurrentUserId(user.id);
+      if (user) {
+        // લોગીન યુઝરનો ૧૦ આંકડાનો નંબર મેળવો
+        let mobile = user.phone || user.user_metadata?.mobile_number || '';
+        mobile = mobile.replace(/[^0-9]/g, '').slice(-10);
+        setUserMobile(mobile);
+      }
       fetchFamilies();
     };
     init();
@@ -34,7 +39,6 @@ export default function FamilyListScreen() {
 
       if (error) throw error;
 
-      // ✅ એક જ ટેબલના ડેટાને 'head_name' અને 'village' મુજબ ગ્રુપ કરો
       const grouped = data.reduce((acc, curr) => {
         const key = `${curr.head_name}-${curr.village}`;
         if (!acc[key]) {
@@ -44,8 +48,7 @@ export default function FamilyListScreen() {
             sub_surname: curr.sub_surname,
             village: curr.village,
             district: curr.district,
-            mobile_number: curr.mobile_number, // ✅ મોબાઈલ નંબર અહીં લીધો
-            user_id: curr.user_id, // સિક્યુરિટી ચેક માટે
+            mobile_number: curr.mobile_number,
             members: []
           };
         }
@@ -114,62 +117,61 @@ export default function FamilyListScreen() {
         ) : (
           <div className="space-y-6">
             <AnimatePresence>
-              {filteredFamilies.map((family) => (
-                <motion.div
-                  key={family.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden"
-                >
-                  {/* Family Header */}
-                  <div className="p-5 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center">
-                    <div>
-                      <h3 className="font-bold text-gray-800 text-lg leading-tight">{family.head_name}</h3>
-                      
-                      {/* ગામ અને જિલ્લો */}
-                      <div className="flex items-center text-gray-500 text-xs gap-1 mt-1">
-                        <MapPin size={12} className="text-orange-500" />
-                        <span>{family.village}, {family.district}</span>
-                      </div>
+              {filteredFamilies.map((family) => {
+                // ✅ ચેક કરો: શું આ પરિવારમાં લોગીન થયેલા યુઝરનો મોબાઈલ નંબર છે?
+                const isMyFamily = family.members.some(m => 
+                  m.member_mobile === userMobile || m.mobile_number === userMobile
+                );
 
-                      {/* ✅ મોબાઈલ નંબર અહીં બતાવ્યો */}
-                      <div className="flex items-center text-deep-blue text-xs gap-1 mt-1.5 font-bold">
-                        <Phone size={12} />
-                        <span>{family.mobile_number ? family.mobile_number : 'નંબર નથી'}</span>
+                return (
+                  <motion.div
+                    key={family.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden"
+                  >
+                    <div className="p-5 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center">
+                      <div>
+                        <h3 className="font-bold text-gray-800 text-lg leading-tight">{family.head_name}</h3>
+                        <div className="flex items-center text-gray-500 text-xs gap-1 mt-1">
+                          <MapPin size={12} className="text-orange-500" />
+                          <span>{family.village}, {family.district}</span>
+                        </div>
+                        <div className="flex items-center text-deep-blue text-xs gap-1 mt-1.5 font-bold">
+                          <Phone size={12} />
+                          <span>{family.mobile_number || 'નંબર નથી'}</span>
+                        </div>
                       </div>
+                      <span className="bg-deep-blue/10 text-deep-blue px-3 py-1 rounded-full text-xs font-bold">
+                        {family.members.length} સભ્યો
+                      </span>
                     </div>
 
-                    <span className="bg-deep-blue/10 text-deep-blue px-3 py-1 rounded-full text-xs font-bold">
-                      {family.members.length} સભ્યો
-                    </span>
-                  </div>
-
-                  {/* Members List */}
-                  <div className="p-4 space-y-3">
-                    {family.members.map((m) => (
-                      <div key={m.id} className="flex justify-between items-center bg-white border border-gray-50 p-3 rounded-xl shadow-sm">
-                        <div>
-                          <p className="font-bold text-gray-700 text-sm">{m.member_name}</p>
-                          <p className="text-[10px] text-gray-400">{m.relationship} | {m.gender}</p>
-                        </div>
-                        
-                        {/* ✅ સિક્યુરિટી ચેક: ફક્ત પોતાના પરિવાર માટે બટન્સ */}
-                        {currentUserId === m.user_id && (
-                          <div className="flex gap-2">
-                            <button onClick={() => removeMember(m.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors">
-                              <Trash2 size={16} />
-                            </button>
-                            {/* જો એડિટનું પેજ હોય તો જ આ બટન કામ કરશે, નહીંતર કાઢી નાખી શકાય */}
-                            <button onClick={() => navigate(`/family-registration`)} className="p-2 text-blue-400 hover:bg-blue-50 rounded-lg transition-colors">
-                              <Edit2 size={16} />
-                            </button>
+                    <div className="p-4 space-y-3">
+                      {family.members.map((m) => (
+                        <div key={m.id} className="flex justify-between items-center bg-white border border-gray-50 p-3 rounded-xl shadow-sm">
+                          <div>
+                            <p className="font-bold text-gray-700 text-sm">{m.member_name}</p>
+                            <p className="text-[10px] text-gray-400">{m.relationship} | {m.gender}</p>
                           </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              ))}
+                          
+                          {/* ✅ જો લોગીન યુઝર આ પરિવારનો સભ્ય હોય તો જ એડિટ બટન બતાવો */}
+                          {isMyFamily && (
+                            <div className="flex gap-2">
+                              <button onClick={() => removeMember(m.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors">
+                                <Trash2 size={16} />
+                              </button>
+                              <button onClick={() => navigate(`/family-registration`)} className="p-2 text-blue-400 hover:bg-blue-50 rounded-lg transition-colors">
+                                <Edit2 size={16} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           </div>
         )}
