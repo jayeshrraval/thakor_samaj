@@ -50,40 +50,57 @@ export default function FamilyRegistrationScreen() {
     loadExistingFamily();
   }, []);
 
-  // ✅ સુધારેલું ડેટા લોડિંગ ફંક્શન (આનાથી જૂનો ડેટા આપોઆપ આવી જશે)
+  // ✅ અપડેટ કરેલું લોજિક: મોબાઈલ નંબરથી પણ ફેમિલી શોધશે
   const loadExistingFamily = async () => {
-    // ૧. હાલના યુઝરને ઓળખો
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // ૨. યુઝર આઈડી (user_id) થી ડેટા શોધો
-    const { data, error } = await supabase
+    // ૧. યુઝરનો મોબાઈલ નંબર લો અને ફોર્મેટ કરો (છેલ્લા ૧૦ આંકડા)
+    let userMobile = user.phone || '';
+    if (userMobile.length > 10) {
+      userMobile = userMobile.slice(-10);
+    }
+
+    // ૨. ડેટાબેઝમાં શોધો: શું આ User ID અથવા આ Mobile Number કોઈ પરિવારમાં છે?
+    const { data: matchedRows } = await supabase
       .from('families')
-      .select('*')
-      .eq('user_id', user.id);
+      .select('user_id')
+      .or(`user_id.eq.${user.id},mobile_number.ilike.%${userMobile}%,member_mobile.ilike.%${userMobile}%`)
+      .limit(1);
 
-    // ૩. જો ડેટા મળે તો ફોર્મ ભરી દો
-    if (data && data.length > 0) {
-      setIsEditMode(true);
-      const head = data[0]; // પહેલા રો માંથી મોભીની વિગત લો
-      
-      setHeadName(head.head_name || '');
-      setMobileNumber(head.mobile_number || ''); // Load Head's Mobile
-      setSubSurname(head.sub_surname || '');
-      setGol(head.gol || '');
-      setVillage(head.village || '');
-      setTaluko(head.taluko || '');
-      setDistrict(head.district || '');
+    // ૩. જો કોઈ પણ રેકોર્ડ મળે, તો એ પરિવારનો મુખ્ય ડેટા લોડ કરો
+    if (matchedRows && matchedRows.length > 0) {
+      const targetUserId = matchedRows[0].user_id;
 
-      // બધા રો (Rows) ને મેમ્બર તરીકે સેટ કરો
-      const loadedMembers = data.map((m: any) => ({
-        id: m.id,
-        memberName: m.member_name,
-        relationship: m.relationship,
-        gender: m.gender,
-        memberMobile: m.member_mobile || '' // Load Member's Mobile
-      }));
-      setMembers(loadedMembers);
+      if (targetUserId) {
+        const { data } = await supabase
+          .from('families')
+          .select('*')
+          .eq('user_id', targetUserId);
+
+        if (data && data.length > 0) {
+          setIsEditMode(true);
+          const head = data[0]; // મોભીનો ડેટા
+          
+          setHeadName(head.head_name || '');
+          setMobileNumber(head.mobile_number || '');
+          setSubSurname(head.sub_surname || '');
+          setGol(head.gol || '');
+          setVillage(head.village || '');
+          setTaluko(head.taluko || '');
+          setDistrict(head.district || '');
+
+          // સભ્યોનો ડેટા સેટ કરો
+          const loadedMembers = data.map((m: any) => ({
+            id: m.id,
+            memberName: m.member_name,
+            relationship: m.relationship,
+            gender: m.gender,
+            memberMobile: m.member_mobile || ''
+          }));
+          setMembers(loadedMembers);
+        }
+      }
     }
   };
 
