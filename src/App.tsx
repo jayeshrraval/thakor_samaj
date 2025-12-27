@@ -31,6 +31,9 @@ import ProfileScreen from './screens/ProfileScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import AboutScreen from './screens/AboutScreen'; 
 
+// ✅ આ ઈમ્પોર્ટ ઉમેર્યું
+import MessagesScreen from './screens/MessagesScreen';
+
 export default function App() {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -90,7 +93,11 @@ export default function App() {
         <Route path="/family-registration" element={<ProtectedRoute><FamilyRegistrationScreen /></ProtectedRoute>} />
         <Route path="/matrimony" element={<ProtectedRoute><MatrimonyScreen /></ProtectedRoute>} />
         <Route path="/requests" element={<ProtectedRoute><RequestsScreen /></ProtectedRoute>} />
-        <Route path="/private-chat/:roomId" element={<ProtectedRoute><PrivateChatScreen /></ProtectedRoute>} />
+        
+        {/* ✅ ચેટ માટેના ૨ રાઉટ્સ સુધાર્યા */}
+        <Route path="/messages" element={<ProtectedRoute><MessagesScreen /></ProtectedRoute>} />
+        <Route path="/chat/:roomId" element={<ProtectedRoute><PrivateChatScreen /></ProtectedRoute>} />
+        
         <Route path="/general-chat" element={<ProtectedRoute><GeneralChatScreen /></ProtectedRoute>} />
         <Route path="/education" element={<ProtectedRoute><EducationHubScreen /></ProtectedRoute>} />
         <Route path="/student-profile" element={<ProtectedRoute><StudentProfileScreen /></ProtectedRoute>} />

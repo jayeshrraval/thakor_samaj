@@ -1,19 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Send, ArrowLeft, MoreVertical, Phone, Loader2, CheckCheck, Video } from 'lucide-react';
+import { 
+  ArrowLeft, MoreVertical, Phone, Loader2, CheckCheck, Video, 
+  Smile, Paperclip, Mic, Camera, Send 
+} from 'lucide-react';
 import { supabase } from '../supabaseClient';
+import EmojiPicker from 'emoji-picker-react'; // ✅ ઈમોજી માટે આ લાઈબ્રેરી વાપરી છે
 
 export default function PrivateChatScreen() {
   const { roomId } = useParams();
   const navigate = useNavigate();
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [otherUser, setOtherUser] = useState<{ id: string; name: string; image: string } | null>(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [otherUser, setOtherUser] = useState({ id: '', name: '', image: '' });
   const [isOnline, setIsOnline] = useState(false);
   
-  const messagesEndRef = useRef<null | HTMLDivElement>(null);
+  // ✅ નવા સ્ટેટ: ઈમોજી પિકર માટે
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -23,7 +30,6 @@ export default function PrivateChatScreen() {
     if (roomId) {
       fetchChatDetails();
       
-      // ૧. મેસેજ માટે લાઈવ લિસનર
       const messageChannel = supabase
         .channel(`room_messages_${roomId}`)
         .on('postgres_changes', { 
@@ -37,7 +43,6 @@ export default function PrivateChatScreen() {
         })
         .subscribe();
 
-      // ૨. ✅ Online/Offline Presence System
       const presenceChannel = supabase.channel(`presence_${roomId}`, {
         config: { presence: { key: currentUserId || 'anon' } }
       });
@@ -45,17 +50,16 @@ export default function PrivateChatScreen() {
       presenceChannel
         .on('presence', { event: 'sync' }, () => {
           const state = presenceChannel.presenceState();
-          // જો સામેવાળાનું ID આ સ્ટેટમાં હોય, તો તે Online છે
           if (otherUser?.id) {
             const onlineUsers = Object.keys(state);
             setIsOnline(onlineUsers.includes(otherUser.id));
           }
         })
         .on('presence', { event: 'join' }, ({ newPresences }) => {
-          if (newPresences.find((p: any) => p.presence_ref === otherUser?.id)) setIsOnline(true);
+            if (newPresences.find((p) => p.presence_ref === otherUser?.id)) setIsOnline(true);
         })
         .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-          if (leftPresences.find((p: any) => p.presence_ref === otherUser?.id)) setIsOnline(false);
+            if (leftPresences.find((p) => p.presence_ref === otherUser?.id)) setIsOnline(false);
         })
         .subscribe(async (status) => {
           if (status === 'SUBSCRIBED' && currentUserId) {
@@ -79,7 +83,7 @@ export default function PrivateChatScreen() {
       const { data: roomData } = await supabase.from('chat_rooms').select('participant_ids').eq('id', roomId).single();
 
       if (roomData) {
-        const otherId = roomData.participant_ids.find((id: string) => id !== user.id);
+        const otherId = roomData.participant_ids.find((id) => id !== user.id);
         if (otherId) {
           const { data: profile } = await supabase.from('matrimony_profiles').select('user_id, full_name, image_url').eq('user_id', otherId).single();
           if (profile) {
@@ -104,6 +108,7 @@ export default function PrivateChatScreen() {
     if (!newMessage.trim() || !currentUserId || !roomId) return;
     const tempMessage = newMessage;
     setNewMessage('');
+    setShowEmojiPicker(false); // મેસેજ જાય એટલે ઈમોજી બંધ
 
     const { error } = await supabase.from('messages').insert([{
       room_id: roomId, sender_id: currentUserId, content: tempMessage
@@ -113,6 +118,11 @@ export default function PrivateChatScreen() {
       alert('મેસેજ મોકલી શકાયો નથી.');
       setNewMessage(tempMessage);
     }
+  };
+
+  // ✅ ઈમોજી ક્લિક હેન્ડલર
+  const onEmojiClick = (emojiObject) => {
+    setNewMessage((prev) => prev + emojiObject.emoji);
   };
 
   return (
@@ -143,14 +153,14 @@ export default function PrivateChatScreen() {
           </div>
         </div>
         
-        <div className="flex items-center space-x-4 text-white p-2">
-          <Video size={20} className="cursor-pointer opacity-90" />
-          <Phone size={20} className="cursor-pointer opacity-90" />
-          <MoreVertical size={20} className="cursor-pointer opacity-90" />
+        <div className="flex items-center space-x-5 text-white p-2">
+          <Video size={22} className="cursor-pointer" />
+          <Phone size={20} className="cursor-pointer" />
+          <MoreVertical size={20} className="cursor-pointer" />
         </div>
       </div>
 
-      {/* Chat Messages Area - WhatsApp Wallpaper */}
+      {/* Chat Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2 relative" 
            style={{ backgroundImage: "url('https://i.pinimg.com/originals/ab/ab/60/abab60f06ab52fa727e78f20501f57df.png')", backgroundSize: 'contain' }}>
         {loading ? (
@@ -163,8 +173,8 @@ export default function PrivateChatScreen() {
                 <div className={`relative px-3 py-1.5 rounded-lg shadow-sm max-w-[85%] text-[15px] ${
                     isMe ? 'bg-[#dcf8c6] text-gray-800 rounded-tr-none' : 'bg-white text-gray-800 rounded-tl-none'
                   }`}>
-                  <p className="pr-12">{msg.content}</p>
-                  <div className="flex items-center justify-end space-x-1 mt-0.5">
+                  <p className="pr-12 pb-1">{msg.content}</p>
+                  <div className="flex items-center justify-end space-x-1 -mt-1">
                     <span className="text-[10px] text-gray-500 uppercase">
                       {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
                     </span>
@@ -178,25 +188,59 @@ export default function PrivateChatScreen() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area - WhatsApp Style */}
-      <div className="p-2 bg-[#efe7de] flex items-center space-x-2">
-        <div className="flex-1 bg-white rounded-full flex items-center px-4 py-1 shadow-sm border border-gray-200">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-            placeholder="મેસેજ લખો..."
-            className="flex-1 py-2 outline-none text-[16px]"
-          />
+      {/* ✅ WhatsApp Style Input Area */}
+      <div className="relative">
+        {/* ઈમોજી પિકર (જો ઓપન હોય તો) */}
+        {showEmojiPicker && (
+          <div className="absolute bottom-16 left-0 right-0 z-30">
+            <EmojiPicker 
+                onEmojiClick={onEmojiClick} 
+                width="100%" 
+                height={300}
+                previewConfig={{ showPreview: false }}
+            />
+          </div>
+        )}
+
+        <div className="p-2 bg-[#efe7de] flex items-end space-x-2 safe-area-bottom z-40">
+            <div className="flex-1 bg-white rounded-2xl flex items-center px-2 py-1 shadow-sm border border-gray-200 min-h-[45px]">
+                {/* સ્માઈલી આઈકન */}
+                <button 
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)} 
+                    className="p-1.5 text-gray-500 hover:text-gray-600 active:scale-90 transition-transform"
+                >
+                    <Smile size={24} />
+                </button>
+
+                <input
+                    type="text"
+                    value={newMessage}
+                    onClick={() => setShowEmojiPicker(false)} // ટાઈપ કરવા ક્લિક કરે તો ઈમોજી બંધ થાય
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    placeholder="મેસેજ લખો..."
+                    className="flex-1 py-2 px-2 outline-none text-[16px] bg-transparent"
+                />
+
+                {/* અટેચમેન્ટ અને કેમેરા આઈકન */}
+                <div className="flex items-center space-x-3 pr-2 text-gray-500">
+                    <Paperclip size={20} className="cursor-pointer rotate-[-45deg]" />
+                    {!newMessage && <Camera size={20} className="cursor-pointer" />}
+                </div>
+            </div>
+
+            {/* માઈક અથવા સેન્ડ બટન */}
+            <button
+                onClick={handleSendMessage}
+                className="w-12 h-12 bg-[#00897b] rounded-full flex items-center justify-center text-white shadow-md active:scale-90 transition-all"
+            >
+                {newMessage.trim() ? (
+                    <Send size={20} className="ml-0.5" /> // જો લખ્યું હોય તો Send બતાવો
+                ) : (
+                    <Mic size={20} /> // જો ખાલી હોય તો Mic બતાવો
+                )}
+            </button>
         </div>
-        <button
-          onClick={handleSendMessage}
-          disabled={!newMessage.trim()}
-          className="w-12 h-12 bg-[#00897b] rounded-full flex items-center justify-center text-white shadow-md active:scale-90 transition-all disabled:opacity-50"
-        >
-          <Send size={20} className="ml-1" />
-        </button>
       </div>
     </div>
   );
