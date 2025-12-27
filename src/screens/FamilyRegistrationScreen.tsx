@@ -63,7 +63,7 @@ export default function FamilyRegistrationScreen() {
     setIsEditMode(false);
   };
 
-  // 🔥 UPDATED LOGIC: Search primarily by Mobile Number
+  // 🔥 UPDATED LOGIC: Match both head_mobile and member_mobile
   const loadExistingFamily = async () => {
     try {
       setLoadingData(true);
@@ -84,28 +84,25 @@ export default function FamilyRegistrationScreen() {
         return;
       }
 
-      // ૨. ડેટાબેઝમાં શોધો: આ નંબર કોઈ પણ રો (Row) માં છે? (Head or Member)
-      const { data: myRecord, error } = await supabase
+      // ૨. ડેટાબેઝમાં શોધો: આ નંબર મોભીના ખાનામાં છે કે સભ્યના ખાનામાં?
+      const { data: matchedRecords, error: matchError } = await supabase
         .from('families')
-        .select('*')
-        .or(`mobile_number.ilike.%${userMobile}%,member_mobile.ilike.%${userMobile}%`)
-        .limit(1)
-        .maybeSingle();
+        .select('mobile_number')
+        .or(`mobile_number.eq.${userMobile},member_mobile.eq.${userMobile}`)
+        .limit(1);
 
-      if (error) throw error;
+      if (matchError) throw matchError;
 
-      // ૩. જો રેકોર્ડ મળે, તો તેનો ઉપયોગ કરીને આખો પરિવાર ખેંચી લાવો
-      if (myRecord) {
-        // જે રેકોર્ડ મળ્યો તેમાંથી 'મોભીનો નંબર' અને 'ગામ' પકડી લો (Family Grouping Keys)
-        const headMobile = myRecord.mobile_number; 
-        const village = myRecord.village;
+      // ૩. જો કોઈ પણ રેકોર્ડ મળે, તો મોભીના મોબાઈલ નંબર (Head Mobile) થી આખા પરિવારનો ડેટા ખેંચી લાવો
+      if (matchedRecords && matchedRecords.length > 0) {
+        const foundHeadMobile = matchedRecords[0].mobile_number;
 
-        // હવે એ જ ગામ અને મોભીના નંબર વાળા બધા સભ્યો લાવો
-        const { data: fullFamily } = await supabase
+        const { data: fullFamily, error: fetchError } = await supabase
           .from('families')
           .select('*')
-          .eq('mobile_number', headMobile) 
-          .eq('village', village);        
+          .eq('mobile_number', foundHeadMobile);
+
+        if (fetchError) throw fetchError;
 
         if (fullFamily && fullFamily.length > 0) {
           setIsEditMode(true);
@@ -133,7 +130,7 @@ export default function FamilyRegistrationScreen() {
         }
       } else {
         // જો નંબર મેચ ના થાય તો નવો યુઝર છે એમ માનીને ફોર્મ ખાલી રાખો
-        // resetForm(); // Optional: If you want to force clear
+        resetForm();
       }
     } catch (error) {
       console.error('Error loading family:', error);
