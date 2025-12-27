@@ -193,11 +193,15 @@ export default function FamilyRegistrationScreen() {
                 member_mobile: m.memberMobile
             };
             
-            // ✅ UUID FIX: જો ID અસલી UUID (જે "new-" થી શરૂ નથી થતી) હોય તો જ મોકલવી
-            if (m.id && !m.id.toString().startsWith('new-')) {
-                baseObj.id = m.id;
+            // 🔥 અગત્યનું ફિક્સ: જો ID માં "new-" હોય અથવા તે ફક્ત આંકડા (Timestamp) હોય,
+            // તો તેને ડેટાબેઝમાં મોકલવી જ નહીં.
+            // UUID પ્રકારના ટેબલમાં આંકડાકીય ID ચાલતી નથી.
+            const isGeneratedId = m.id.toString().startsWith('new-') || !isNaN(Number(m.id));
+
+            if (!isGeneratedId) {
+                baseObj.id = m.id; // માત્ર સાચી UUID હોય તો જ મોકલવી
             }
-            // ELSE માં કશું જ લખવાનું નથી, જેથી નવી ID 'null' તરીકે ના જાય
+            // ELSE માં કશું જ લખવાનું નથી, જેથી નવી ID 'null' તરીકે ના જાય અને Supabase પોતે જનરેટ કરે
             
             return baseObj;
         });
@@ -280,6 +284,7 @@ export default function FamilyRegistrationScreen() {
       </div>
 
       <div className="px-5 py-6 space-y-6 font-gujarati">
+        {/* --- મુખ્ય માહિતી સેક્શન --- */}
         <div className="bg-white p-6 rounded-[30px] shadow-sm space-y-4 border border-gray-100">
           <h2 className="font-bold text-gray-800 flex items-center gap-2 text-lg"><User size={20} className="text-deep-blue"/> મુખ્ય માહિતી</h2>
           
@@ -301,6 +306,7 @@ export default function FamilyRegistrationScreen() {
           <input type="text" value={gol} onChange={(e) => setGol(e.target.value)} placeholder="ગોળ (દા.ત. કાશ્યપ) *" className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-mint" />
         </div>
 
+        {/* --- સભ્યોની યાદી સેક્શન --- */}
         <div className="bg-white p-6 rounded-[30px] shadow-sm space-y-4 border border-gray-100">
           <h2 className="font-bold text-gray-800 flex items-center gap-2 text-lg"><Users size={20} className="text-deep-blue"/> સભ્યોની યાદી</h2>
           <div className="space-y-4">
