@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Globe, Bell, Lock, HelpCircle, LogOut, ChevronRight, Key, Trash2, X, Loader2, Check } from 'lucide-react';
+import { User, Globe, Bell, Lock, HelpCircle, LogOut, ChevronRight, Key, Trash2, X, Loader2, Check, Volume2, VolumeX } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
@@ -9,6 +9,11 @@ export default function SettingsScreen() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   
+  // ✅ Notification & Language State (New)
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [language, setLanguage] = useState('Gujarati');
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
+
   // Password Modal State
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -29,14 +34,22 @@ export default function SettingsScreen() {
       items: [
         { icon: User, label: 'Edit Profile', labelGu: 'પ્રોફાઈલ એડિટ કરો', path: '/profile' },
         { icon: Key, label: 'Change Password', labelGu: 'પાસવર્ડ બદલો', action: 'password' },
-        { icon: Globe, label: 'Change Language', labelGu: 'ભાષા બદલો', action: 'language' },
+        // ✅ અપડેટ: ભાષા બદલવા માટેનું એક્શન અને લાઈવ સ્ટેટસ
+        { icon: Globe, label: `Current: ${language}`, labelGu: 'ભાષા બદલો', action: 'language' },
       ],
     },
     {
       title: 'Preferences',
       titleGu: 'પસંદગી',
       items: [
-        { icon: Bell, label: 'Notification Preferences', labelGu: 'નોટીફિકેશન સેટિંગ', action: 'notifications' },
+        // ✅ અપડેટ: નોટીફિકેશન સાઉન્ડ ON/OFF ટોગલ
+        { 
+            icon: soundEnabled ? Volume2 : VolumeX, 
+            label: `Sound is ${soundEnabled ? 'On' : 'Off'}`, 
+            labelGu: `નોટીફિકેશન સાઉન્ડ: ${soundEnabled ? 'ચાલુ' : 'બંધ'}`, 
+            action: 'notifications',
+            color: soundEnabled ? 'text-green-600' : 'text-gray-400'
+        },
         { icon: Lock, label: 'Privacy', labelGu: 'પ્રાઈવસી & નિયમો', path: '/about' },
       ],
     },
@@ -63,7 +76,15 @@ export default function SettingsScreen() {
     else if (action === 'delete_account') {
       handleDeleteAccount();
     }
-    else if (action === 'language' || action === 'notifications' || action === 'privacy') {
+    // ✅ ૪. નવું: નોટીફિકેશન સાઉન્ડ ટોગલ
+    else if (action === 'notifications') {
+        setSoundEnabled(!soundEnabled);
+    }
+    // ✅ ૫. નવું: લેંગ્વેજ મોડલ ઓપન
+    else if (action === 'language') {
+        setShowLanguageModal(true);
+    }
+    else if (action === 'privacy') {
       alert('આ ફીચર ટૂંક સમયમાં આવશે.');
     }
   };
@@ -121,6 +142,13 @@ export default function SettingsScreen() {
     }
   };
 
+  // 🌐 Language Selection Logic
+  const handleLanguageSelect = (selectedLang: string) => {
+      setLanguage(selectedLang);
+      setShowLanguageModal(false);
+      // ભવિષ્યમાં અહીં આખી એપની ભાષા બદલવાનું લોજિક મૂકી શકાય
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
@@ -162,7 +190,15 @@ export default function SettingsScreen() {
                         <p className="text-xs text-gray-500">{item.label}</p>
                       </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                    
+                    {/* Toggle Indicator for Notifications */}
+                    {item.action === 'notifications' ? (
+                        <div className={`w-10 h-6 rounded-full p-1 transition-colors ${soundEnabled ? 'bg-green-500' : 'bg-gray-300'}`}>
+                            <div className={`w-4 h-4 bg-white rounded-full shadow-md transition-transform ${soundEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+                        </div>
+                    ) : (
+                        <ChevronRight className="w-5 h-5 text-gray-400" />
+                    )}
                   </button>
                 );
               })}
@@ -220,6 +256,44 @@ export default function SettingsScreen() {
                   {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <Check className="w-5 h-5" />}
                   <span>સેવ કરો</span>
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 🌐 LANGUAGE SELECTION MODAL (NEW) */}
+      <AnimatePresence>
+        {showLanguageModal && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold font-gujarati text-gray-800">ભાષા પસંદ કરો</h3>
+                <button onClick={() => setShowLanguageModal(false)} className="p-1 bg-gray-100 rounded-full">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {['English', 'Hindi', 'Gujarati'].map((lang) => (
+                    <button
+                        key={lang}
+                        onClick={() => handleLanguageSelect(lang)}
+                        className={`w-full p-4 rounded-xl flex items-center justify-between border-2 transition-all ${
+                            language === lang ? 'border-blue-500 bg-blue-50' : 'border-gray-100 hover:bg-gray-50'
+                        }`}
+                    >
+                        <span className={`font-bold ${language === lang ? 'text-blue-600' : 'text-gray-700'}`}>
+                            {lang}
+                        </span>
+                        {language === lang && <Check className="w-5 h-5 text-blue-600" />}
+                    </button>
+                ))}
               </div>
             </motion.div>
           </div>
