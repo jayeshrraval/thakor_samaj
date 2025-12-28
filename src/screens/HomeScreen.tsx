@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../supabaseClient';
 
-// ✅ સાઉન્ડ ફાઈલનો પાથ (public folder માં હોવી જોઈએ અથવા URL)
+// ✅ સાઉન્ડ ફાઈલનો પાથ
 const NOTIFICATION_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'; 
 
 export default function HomeScreen() {
@@ -28,18 +28,16 @@ export default function HomeScreen() {
     messages: 0
   });
 
-  // --- Real-time Logic (Updated with Connection Logs) ---
+  // --- Real-time Logic (Fixes Applied) ---
   useEffect(() => {
     fetchDashboardData();
     
     // ✅ ઓડિયો ઓબ્જેક્ટ તૈયાર કરો
     audioRef.current = new Audio(NOTIFICATION_SOUND_URL);
 
-    console.log("Setting up Realtime Subscription..."); // 🟢 Debug Step 1
-
     // ડેટાબેઝમાં ફેરફાર થાય તો ઓટોમેટિક અપડેટ કરો
     const channel = supabase
-      .channel('public:notifications_debug') // ✅ ચેનલનું નામ બદલ્યું યુનિકનેસ માટે
+      .channel('realtime-dashboard-v2') // ચેનલ નામ યુનિક રાખ્યું
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'matrimony_profiles' },
@@ -55,30 +53,27 @@ export default function HomeScreen() {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications' }, 
         (payload) => {
-           console.log("🔥 EVENT RECEIVED! 🔥", payload); // 🟢 જો આ આવે તો કામ થઈ ગયું
+           console.log("🔥 Notification Received:", payload);
            
-           // ૧. સાઉન્ડ વગાડો
+           // ૧. સાઉન્ડ વગાડવાનો પ્રયાસ કરો
            if (audioRef.current) {
-              audioRef.current.play().catch(e => console.log("Audio play failed:", e));
+              audioRef.current.play()
+                .then(() => {
+                    // સાઉન્ડ વાગ્યો
+                })
+                .catch(e => {
+                    console.warn("Audio blocked by browser, but showing popup:", e);
+                });
            }
-           // ૨. પોપઅપ બતાવો
+
+           // ૨. પોપઅપ બતાવો (સાઉન્ડ વાગે કે ના વાગે, પોપઅપ તો આવવું જ જોઈએ)
            setShowNotificationPopup(true);
            
-           // ૩. ૫ સેકન્ડ પછી પોપઅપ બંધ કરો (ઓપ્શનલ)
+           // ૩. ૫ સેકન્ડ પછી પોપઅપ બંધ કરો
            setTimeout(() => setShowNotificationPopup(false), 5000);
         }
       )
-      .subscribe((status) => {
-        // 🟢 આ સૌથી મહત્વનું છે: સ્ટેટસ શું આવે છે?
-        console.log("📡 Realtime Status:", status);
-        
-        if (status === 'SUBSCRIBED') {
-            console.log("✅ Connected to Supabase Realtime!");
-        }
-        if (status === 'CHANNEL_ERROR') {
-            console.log("❌ Connection Failed! Check Network or Supabase Settings.");
-        }
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
@@ -151,26 +146,26 @@ export default function HomeScreen() {
   return (
     <div className="min-h-screen bg-gray-50 pb-24 font-gujarati relative">
       
-      {/* 🔥 નોટિફિકેશન પોપઅપ મોડલ 🔥 */}
+      {/* 🔥 નોટિફિકેશન પોપઅપ મોડલ (High Z-Index) 🔥 */}
       <AnimatePresence>
         {showNotificationPopup && (
           <motion.div 
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -50 }}
-            className="fixed top-24 left-1/2 transform -translate-x-1/2 z-[100] w-[90%] max-w-sm"
+            className="fixed top-24 left-1/2 transform -translate-x-1/2 z-[9999] w-[90%] max-w-sm pointer-events-auto"
           >
-            <div className="bg-white/90 backdrop-blur-md border border-deep-blue/20 p-4 rounded-2xl shadow-2xl flex items-center gap-4 relative">
-              <div className="bg-deep-blue/10 p-3 rounded-full animate-bounce">
+            <div className="bg-white/95 backdrop-blur-xl border border-deep-blue/20 p-4 rounded-2xl shadow-2xl flex items-center gap-4 relative ring-1 ring-black/5">
+              <div className="bg-deep-blue/10 p-3 rounded-full animate-bounce shrink-0">
                  <Bell className="w-6 h-6 text-deep-blue" />
               </div>
-              <div onClick={() => { navigate('/notifications'); setShowNotificationPopup(false); }}>
+              <div className="flex-1 cursor-pointer" onClick={() => { navigate('/notifications'); setShowNotificationPopup(false); }}>
                  <h3 className="font-bold text-gray-800 text-sm">નવી નોટીફીકેશન આવેલ છે!</h3>
-                 <p className="text-xs text-gray-500 font-medium">હમણાજ તપાસો</p>
+                 <p className="text-xs text-gray-500 font-medium mt-0.5">હમણાજ તપાસો</p>
               </div>
               <button 
                 onClick={() => setShowNotificationPopup(false)}
-                className="absolute top-2 right-2 text-gray-400 hover:text-red-500"
+                className="absolute top-2 right-2 text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-100 transition-colors"
               >
                 <X size={16} />
               </button>
