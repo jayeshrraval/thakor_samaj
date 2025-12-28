@@ -28,16 +28,18 @@ export default function HomeScreen() {
     messages: 0
   });
 
-  // --- Real-time Logic ---
+  // --- Real-time Logic (Updated with Connection Logs) ---
   useEffect(() => {
     fetchDashboardData();
     
     // ✅ ઓડિયો ઓબ્જેક્ટ તૈયાર કરો
     audioRef.current = new Audio(NOTIFICATION_SOUND_URL);
 
+    console.log("Setting up Realtime Subscription..."); // 🟢 Debug Step 1
+
     // ડેટાબેઝમાં ફેરફાર થાય તો ઓટોમેટિક અપડેટ કરો
     const channel = supabase
-      .channel('realtime-dashboard')
+      .channel('public:notifications_debug') // ✅ ચેનલનું નામ બદલ્યું યુનિકનેસ માટે
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'matrimony_profiles' },
@@ -48,12 +50,13 @@ export default function HomeScreen() {
         { event: '*', schema: 'public', table: 'users' },
         () => fetchDashboardData()
       )
-      // 🔥 ખાસ સુધારો: ટેબલનું નામ 'notifications' કર્યું 🔥
+      // 🔥 ખાસ સુધારો: Notifications Listener 🔥
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications' }, 
         (payload) => {
-           console.log("New Notification received!", payload);
+           console.log("🔥 EVENT RECEIVED! 🔥", payload); // 🟢 જો આ આવે તો કામ થઈ ગયું
+           
            // ૧. સાઉન્ડ વગાડો
            if (audioRef.current) {
               audioRef.current.play().catch(e => console.log("Audio play failed:", e));
@@ -65,7 +68,17 @@ export default function HomeScreen() {
            setTimeout(() => setShowNotificationPopup(false), 5000);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        // 🟢 આ સૌથી મહત્વનું છે: સ્ટેટસ શું આવે છે?
+        console.log("📡 Realtime Status:", status);
+        
+        if (status === 'SUBSCRIBED') {
+            console.log("✅ Connected to Supabase Realtime!");
+        }
+        if (status === 'CHANNEL_ERROR') {
+            console.log("❌ Connection Failed! Check Network or Supabase Settings.");
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -249,7 +262,7 @@ export default function HomeScreen() {
                 <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-4 shadow-lg group-hover:rotate-6 transition-transform`}>
                   <Icon className="w-6 h-6 text-white" strokeWidth={2.5} />
                 </div>
-                <h3 className="font-bold text-gray-800 text-[13px] leading-snug text-left tracking-tight">
+                <h3 className="font-bold text-gray-800 text-lg leading-snug text-left tracking-tight">
                   {card.title}
                 </h3>
               </motion.button>
