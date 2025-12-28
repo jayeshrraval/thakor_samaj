@@ -9,9 +9,15 @@ export default function SettingsScreen() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   
-  // ✅ Notification & Language State (New)
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [language, setLanguage] = useState('Gujarati');
+  // ✅ સુધારો ૧: સ્ટેટ હવે મેમરી (LocalStorage) માંથી ડેટા લેશે
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+     return localStorage.getItem('notification_sound') !== 'off'; // Default True (On)
+  });
+  
+  const [language, setLanguage] = useState(() => {
+     return localStorage.getItem('app_language') || 'Gujarati'; // Default Gujarati
+  });
+
   const [showLanguageModal, setShowLanguageModal] = useState(false);
 
   // Password Modal State
@@ -76,9 +82,11 @@ export default function SettingsScreen() {
     else if (action === 'delete_account') {
       handleDeleteAccount();
     }
-    // ✅ ૪. નવું: નોટીફિકેશન સાઉન્ડ ટોગલ
+    // ✅ સુધારો ૨: નોટીફિકેશન સાઉન્ડ ટોગલ અને સેવ
     else if (action === 'notifications') {
-        setSoundEnabled(!soundEnabled);
+        const newState = !soundEnabled;
+        setSoundEnabled(newState);
+        localStorage.setItem('notification_sound', newState ? 'on' : 'off'); // કાયમી સેવ
     }
     // ✅ ૫. નવું: લેંગ્વેજ મોડલ ઓપન
     else if (action === 'language') {
@@ -142,11 +150,11 @@ export default function SettingsScreen() {
     }
   };
 
-  // 🌐 Language Selection Logic
+  // ✅ સુધારો ૩: ભાષા સિલેક્શન અને સેવ
   const handleLanguageSelect = (selectedLang: string) => {
       setLanguage(selectedLang);
+      localStorage.setItem('app_language', selectedLang); // કાયમી સેવ
       setShowLanguageModal(false);
-      // ભવિષ્યમાં અહીં આખી એપની ભાષા બદલવાનું લોજિક મૂકી શકાય
   };
 
   return (

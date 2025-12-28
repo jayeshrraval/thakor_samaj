@@ -55,8 +55,11 @@ export default function HomeScreen() {
         (payload) => {
            console.log("🔥 Notification Received:", payload);
            
-           // ૧. સાઉન્ડ વગાડવાનો પ્રયાસ કરો
-           if (audioRef.current) {
+           // ✅ ૧. સેટિંગ ચેક કરો: શું સાઉન્ડ ચાલુ છે?
+           const isSoundEnabled = localStorage.getItem('notification_sound') !== 'off';
+
+           // ૨. જો સેટિંગ ચાલુ હોય, તો જ સાઉન્ડ વગાડો
+           if (isSoundEnabled && audioRef.current) {
               audioRef.current.play()
                 .then(() => {
                     // સાઉન્ડ વાગ્યો
@@ -64,12 +67,14 @@ export default function HomeScreen() {
                 .catch(e => {
                     console.warn("Audio blocked by browser, but showing popup:", e);
                 });
+           } else {
+               console.log("🔕 Sound is muted in Settings.");
            }
 
-           // ૨. પોપઅપ બતાવો (સાઉન્ડ વાગે કે ના વાગે, પોપઅપ તો આવવું જ જોઈએ)
+           // ૩. પોપઅપ બતાવો (સાઉન્ડ વાગે કે ના વાગે, પોપઅપ તો આવવું જ જોઈએ)
            setShowNotificationPopup(true);
            
-           // ૩. ૫ સેકન્ડ પછી પોપઅપ બંધ કરો
+           // ૪. ૫ સેકન્ડ પછી પોપઅપ બંધ કરો
            setTimeout(() => setShowNotificationPopup(false), 5000);
         }
       )
