@@ -21,6 +21,10 @@ export default function HomeScreen() {
   // ✅ ઓડિયો પ્લેયર રેફરન્સ
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // ✅ ભાષા લોડ કરો (નવું લોજિક)
+  const language = localStorage.getItem('app_language') || 'Gujarati';
+  const t = (gu: string, en: string) => language === 'English' ? en : gu;
+
   // ✅ સ્ટેટ્સ: એપ યુઝર્સ અને મેટ્રિમોની પ્રોફાઈલ માટે
   const [statsData, setStatsData] = useState({
     totalAppUsers: 0,
@@ -58,7 +62,7 @@ export default function HomeScreen() {
            // ✅ ૧. સેટિંગ ચેક કરો: શું સાઉન્ડ ચાલુ છે?
            const isSoundEnabled = localStorage.getItem('notification_sound') !== 'off';
 
-           // ૨. જો સેટિંગ ચાલુ હોય, તો જ સાઉન્ડ વગાડો
+           // ✅ ૨. જો સેટિંગ ચાલુ હોય, તો જ સાઉન્ડ વગાડો
            if (isSoundEnabled && audioRef.current) {
               audioRef.current.play()
                 .then(() => {
@@ -130,22 +134,22 @@ export default function HomeScreen() {
     }
   };
 
-  // ✅ અપડેટ: 'મેસેજ' કાર્ડ કાઢીને 'મેટ્રીમોની ચેટ' ઉમેર્યું
+  // ✅ અપડેટ: 'મેસેજ' કાર્ડ કાઢીને 'મેટ્રીમોની ચેટ' ઉમેર્યું (ભાષા સપોર્ટ સાથે)
   const featureCards = [
-    { icon: Heart, title: 'મેટ્રિમોની પ્રોફાઈલ', color: 'from-pink-400 to-rose-500', path: '/matrimony' },
-    { icon: Users, title: 'પરિવાર રજીસ્ટ્રેશન', color: 'from-deep-blue to-cyan-500', path: '/family-list' },
-    { icon: GraduationCap, title: 'શિક્ષણ અને ભવિષ્ય', color: 'from-indigo-400 to-purple-500', path: '/education' },
-    { icon: Briefcase, title: 'નોકરીની જાહેરાત', color: 'from-blue-600 to-indigo-600', path: '/jobs' },
-    { icon: MessageCircle, title: 'મેટ્રીમોની ચેટ', color: 'from-blue-400 to-cyan-500', path: '/messages' },
-    { icon: CreditCard, title: 'મેમ્બરશીપ ફી', color: 'from-royal-gold to-yellow-600', path: '/subscription' },
-    { icon: Building2, title: 'યોગી સમાજ ટ્રસ્ટ', color: 'from-emerald-400 to-green-500', path: '/trust' },
-    { icon: Bot, title: 'જ્ઞાન સહાયક', color: 'from-violet-400 to-purple-500', path: '/ai-assistant' },
+    { icon: Heart, title: t('મેટ્રિમોની પ્રોફાઈલ', 'Matrimony Profiles'), color: 'from-pink-400 to-rose-500', path: '/matrimony' },
+    { icon: Users, title: t('પરિવાર રજીસ્ટ્રેશન', 'Family Registration'), color: 'from-deep-blue to-cyan-500', path: '/family-list' },
+    { icon: GraduationCap, title: t('શિક્ષણ અને ભવિષ્ય', 'Education & Future'), color: 'from-indigo-400 to-purple-500', path: '/education' },
+    { icon: Briefcase, title: t('નોકરીની જાહેરાત', 'Job Ads'), color: 'from-blue-600 to-indigo-600', path: '/jobs' },
+    { icon: MessageCircle, title: t('મેટ્રીમોની ચેટ', 'Matrimony Chat'), color: 'from-blue-400 to-cyan-500', path: '/messages' },
+    { icon: CreditCard, title: t('મેમ્બરશીપ ફી', 'Membership Fee'), color: 'from-royal-gold to-yellow-600', path: '/subscription' },
+    { icon: Building2, title: t('યોગી સમાજ ટ્રસ્ટ', 'Yogi Samaj Trust'), color: 'from-emerald-400 to-green-500', path: '/trust' },
+    { icon: Bot, title: t('જ્ઞાન સહાયક', 'AI Assistant'), color: 'from-violet-400 to-purple-500', path: '/ai-assistant' },
   ];
 
   const stats = [
-    { label: 'કુલ સભ્યો', value: statsData.totalAppUsers.toString(), color: 'text-deep-blue' },
-    { label: 'લગ્ન પ્રોફાઈલ', value: statsData.matrimonyProfiles.toString(), color: 'text-mint' },
-    { label: 'મેસેજ', value: statsData.messages.toString(), color: 'text-rose-600' },
+    { label: t('કુલ સભ્યો', 'Total Members'), value: statsData.totalAppUsers.toString(), color: 'text-deep-blue' },
+    { label: t('લગ્ન પ્રોફાઈલ', 'Profiles'), value: statsData.matrimonyProfiles.toString(), color: 'text-mint' },
+    { label: t('મેસેજ', 'Messages'), value: statsData.messages.toString(), color: 'text-rose-600' },
   ];
 
   return (
@@ -165,8 +169,8 @@ export default function HomeScreen() {
                  <Bell className="w-6 h-6 text-deep-blue" />
               </div>
               <div className="flex-1 cursor-pointer" onClick={() => { navigate('/notifications'); setShowNotificationPopup(false); }}>
-                 <h3 className="font-bold text-gray-800 text-sm">નવી નોટીફીકેશન આવેલ છે!</h3>
-                 <p className="text-xs text-gray-500 font-medium mt-0.5">હમણાજ તપાસો</p>
+                 <h3 className="font-bold text-gray-800 text-sm">{t('નવી નોટીફીકેશન આવેલ છે!', 'New Notification Received!')}</h3>
+                 <p className="text-xs text-gray-500 font-medium mt-0.5">{t('હમણાજ તપાસો', 'Check Now')}</p>
               </div>
               <button 
                 onClick={() => setShowNotificationPopup(false)}
@@ -195,7 +199,7 @@ export default function HomeScreen() {
               </div>
               <div>
                 <h1 className="text-white font-bold text-xl tracking-tight">
-                  {loading ? 'તૈયાર થઈ રહ્યું છે...' : `નમસ્તે, ${userName}`}
+                  {loading ? t('તૈયાર થઈ રહ્યું છે...', 'Loading...') : `${t('નમસ્તે', 'Hello')}, ${userName}`}
                 </h1>
                 <p className="text-mint text-xs font-medium uppercase tracking-widest">Yogi Samaj Connect</p>
               </div>
@@ -218,9 +222,9 @@ export default function HomeScreen() {
       >
         <div className="relative z-10 text-white">
           <h3 className="font-bold text-lg flex items-center gap-2">
-            🦚 કૃષ્ણ સારથી (AI)
+            🦚 {t('કૃષ્ણ સારથી (AI)', 'Krishna Sarathi (AI)')}
           </h3>
-          <p className="text-xs text-orange-50 text-opacity-90 mt-1">ગીતાજીના જ્ઞાનથી સમસ્યાનું સમાધાન મેળવો.</p>
+          <p className="text-xs text-orange-50 text-opacity-90 mt-1">{t('ગીતાજીના જ્ઞાનથી સમસ્યાનું સમાધાન મેળવો.', 'Get solutions from Gita.')}</p>
         </div>
         <div className="relative z-10 w-12 h-12 bg-white/30 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/50 shadow-lg">
           <span className="text-2xl">🙏</span>
@@ -238,8 +242,8 @@ export default function HomeScreen() {
                 <AlertTriangle className="w-6 h-6 text-red-600" />
               </div>
               <div>
-                <h3 className="font-bold text-gray-800 text-lg">અકસ્માત સહાય (SOS)</h3>
-                <p className="text-[10px] text-red-500 font-bold uppercase">ઈમરજન્સી મદદ માટે અહીં ક્લિક કરો</p>
+                <h3 className="font-bold text-gray-800 text-lg">{t('અકસ્માત સહાય (SOS)', 'Accident Aid (SOS)')}</h3>
+                <p className="text-[10px] text-red-500 font-bold uppercase">{t('ઈમરજન્સી મદદ માટે અહીં ક્લિક કરો', 'Click here for emergency help')}</p>
               </div>
             </div>
             <div className="bg-red-600 text-white px-3 py-1 rounded-lg text-xs font-black shadow-lg">HELP</div>

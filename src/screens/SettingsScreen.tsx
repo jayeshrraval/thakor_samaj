@@ -9,13 +9,13 @@ export default function SettingsScreen() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   
-  // ✅ સુધારો ૧: સ્ટેટ હવે મેમરી (LocalStorage) માંથી ડેટા લેશે
+  // ✅ સ્ટેટ મેમરી (LocalStorage) માંથી ડેટા લેશે
   const [soundEnabled, setSoundEnabled] = useState(() => {
-     return localStorage.getItem('notification_sound') !== 'off'; // Default True (On)
+     return localStorage.getItem('notification_sound') !== 'off'; 
   });
   
   const [language, setLanguage] = useState(() => {
-     return localStorage.getItem('app_language') || 'Gujarati'; // Default Gujarati
+     return localStorage.getItem('app_language') || 'Gujarati'; 
   });
 
   const [showLanguageModal, setShowLanguageModal] = useState(false);
@@ -24,7 +24,7 @@ export default function SettingsScreen() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   
-  // ✅ ૧. વોટ્સએપ સપોર્ટ ફંક્શન (તમારા નંબર સાથે)
+  // ✅ ૧. વોટ્સએપ સપોર્ટ ફંક્શન
   const openWhatsAppSupport = () => {
     const phoneNumber = "919714443758"; 
     const message = "જય યોગેશ્વર, મને યોગી સમાજ એપમાં સહાય/સપોર્ટની જરૂર છે.";
@@ -40,15 +40,14 @@ export default function SettingsScreen() {
       items: [
         { icon: User, label: 'Edit Profile', labelGu: 'પ્રોફાઈલ એડિટ કરો', path: '/profile' },
         { icon: Key, label: 'Change Password', labelGu: 'પાસવર્ડ બદલો', action: 'password' },
-        // ✅ અપડેટ: ભાષા બદલવા માટેનું એક્શન અને લાઈવ સ્ટેટસ
-        { icon: Globe, label: `Current: ${language}`, labelGu: 'ભાષા બદલો', action: 'language' },
+        // ✅ ભાષાનું નામ પણ બદલાશે
+        { icon: Globe, label: `Current: ${language}`, labelGu: `ભાષા: ${language}`, action: 'language' },
       ],
     },
     {
       title: 'Preferences',
       titleGu: 'પસંદગી',
       items: [
-        // ✅ અપડેટ: નોટીફિકેશન સાઉન્ડ ON/OFF ટોગલ
         { 
             icon: soundEnabled ? Volume2 : VolumeX, 
             label: `Sound is ${soundEnabled ? 'On' : 'Off'}`, 
@@ -63,7 +62,6 @@ export default function SettingsScreen() {
       title: 'Support',
       titleGu: 'સહાય',
       items: [
-        // ✅ ૨. અહીં path બદલીને action: 'support' કર્યું છે
         { icon: HelpCircle, label: 'Help & Support', labelGu: 'સહાય અને સપોર્ટ', action: 'support' },
         { icon: Trash2, label: 'Delete Account', labelGu: 'એકાઉન્ટ ડિલીટ કરો', action: 'delete_account', color: 'text-red-500' },
       ],
@@ -75,20 +73,18 @@ export default function SettingsScreen() {
     if (action === 'password') {
       setShowPasswordModal(true);
     } 
-    // ✅ ૩. સપોર્ટ એક્શન હેન્ડલર
     else if (action === 'support') {
       openWhatsAppSupport();
     }
     else if (action === 'delete_account') {
       handleDeleteAccount();
     }
-    // ✅ સુધારો ૨: નોટીફિકેશન સાઉન્ડ ટોગલ અને સેવ
+    // ✅ નોટીફિકેશન સાઉન્ડ ટોગલ અને સેવ
     else if (action === 'notifications') {
         const newState = !soundEnabled;
         setSoundEnabled(newState);
-        localStorage.setItem('notification_sound', newState ? 'on' : 'off'); // કાયમી સેવ
+        localStorage.setItem('notification_sound', newState ? 'on' : 'off');
     }
-    // ✅ ૫. નવું: લેંગ્વેજ મોડલ ઓપન
     else if (action === 'language') {
         setShowLanguageModal(true);
     }
@@ -150,18 +146,23 @@ export default function SettingsScreen() {
     }
   };
 
-  // ✅ સુધારો ૩: ભાષા સિલેક્શન અને સેવ
+  // ✅ ભાષા સિલેક્શન અને સેવ + રીલોડ (જેથી આખી એપમાં બદલાય)
   const handleLanguageSelect = (selectedLang: string) => {
       setLanguage(selectedLang);
-      localStorage.setItem('app_language', selectedLang); // કાયમી સેવ
+      localStorage.setItem('app_language', selectedLang); 
       setShowLanguageModal(false);
+      // પેજ રીલોડ કરવું પડશે જેથી આખી એપમાં ભાષા બદલાઈ જાય
+      window.location.reload();
   };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-500 to-indigo-500 safe-area-top px-6 py-6">
-        <h1 className="text-white font-gujarati font-bold text-2xl">સેટિંગ્સ</h1>
+        <h1 className="text-white font-gujarati font-bold text-2xl">
+            {/* ✅ હેડર ભાષા મુજબ બદલાશે */}
+            {language === 'English' ? 'Settings' : 'સેટિંગ્સ'}
+        </h1>
         <p className="text-white/80 text-sm">Settings & Account Options</p>
       </div>
 
@@ -175,12 +176,20 @@ export default function SettingsScreen() {
             className="space-y-3"
           >
             <div className="px-2">
-              <h3 className="font-gujarati font-bold text-gray-800">{group.titleGu}</h3>
-              <p className="text-xs text-gray-500">{group.title}</p>
+              <h3 className="font-gujarati font-bold text-gray-800">
+                  {/* ✅ ગ્રુપ ટાઈટલ ભાષા મુજબ બદલાશે */}
+                  {language === 'English' ? group.title : group.titleGu}
+              </h3>
+              <p className="text-xs text-gray-500">{language === 'English' ? group.titleGu : group.title}</p>
             </div>
             <div className="premium-card overflow-hidden">
               {group.items.map((item, itemIndex) => {
                 const Icon = item.icon;
+                
+                // ✅ મેઈન સુધારો: ભાષા મુજબ ટેક્સ્ટ બદલવાનું લોજિક
+                const mainText = language === 'English' ? item.label : item.labelGu;
+                const subText = language === 'English' ? item.labelGu : item.label;
+
                 return (
                   <button
                     key={itemIndex}
@@ -194,8 +203,9 @@ export default function SettingsScreen() {
                         <Icon className={`w-5 h-5 ${item.color || 'text-gray-600'}`} />
                       </div>
                       <div className="text-left">
-                        <p className={`font-gujarati font-medium ${item.color || 'text-gray-800'}`}>{item.labelGu}</p>
-                        <p className="text-xs text-gray-500">{item.label}</p>
+                        {/* ✅ અહીં હવે ડાયનેમિક ટેક્સ્ટ આવશે */}
+                        <p className={`font-gujarati font-medium ${item.color || 'text-gray-800'}`}>{mainText}</p>
+                        <p className="text-xs text-gray-500">{subText}</p>
                       </div>
                     </div>
                     
@@ -223,7 +233,9 @@ export default function SettingsScreen() {
           className="w-full premium-card p-4 flex items-center justify-center space-x-3 hover:shadow-elevated transition-all active:scale-98 border-2 border-red-100"
         >
           <LogOut className="w-6 h-6 text-red-500" />
-          <span className="font-gujarati font-semibold text-red-500 text-lg">લૉગઆઉટ કરો</span>
+          <span className="font-gujarati font-semibold text-red-500 text-lg">
+             {language === 'English' ? 'Logout' : 'લૉગઆઉટ કરો'}
+          </span>
         </motion.button>
       </div>
 
@@ -270,7 +282,7 @@ export default function SettingsScreen() {
         )}
       </AnimatePresence>
 
-      {/* 🌐 LANGUAGE SELECTION MODAL (NEW) */}
+      {/* 🌐 LANGUAGE SELECTION MODAL */}
       <AnimatePresence>
         {showLanguageModal && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4">
