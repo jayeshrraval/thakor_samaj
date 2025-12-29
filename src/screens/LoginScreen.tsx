@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Smartphone, Loader2, AlertCircle } from 'lucide-react';
-import { supabase } from '../lib/supabase'; // ⚠️ જો આ પાથ અલગ હોય તો સુધારી લેજો (દા.ત. '../supabaseClient')
+import { Loader2, AlertCircle } from 'lucide-react';
+import { supabase } from '../supabaseClient'; 
 
 export default function LoginScreen() {
   const [activeTab, setActiveTab] = useState('login');
@@ -25,7 +25,7 @@ export default function LoginScreen() {
     setErrorMsg(''); 
   };
 
-  // 🛠 REGISTER FUNCTION
+  // 🛠 REGISTER FUNCTION (આ ફંક્શનમાં ડેટા સેવ કરવાનું લોજીક સુધાર્યું છે)
   const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -45,16 +45,17 @@ export default function LoginScreen() {
 
     try {
       // Supabase માટે ફેક ઈમેલ બનાવો
-      const fakeEmail = `${formData.mobile}@samaj.app`;
+      const fakeEmail = `${formData.mobile}@thakor.com`;
 
+      // ✅ અહીયા જુઓ: options ઉમેર્યું છે જેથી નામ ડેટાબેઝમાં જાય
       const { data, error } = await supabase.auth.signUp({
         email: fakeEmail,
         password: formData.password,
         options: {
           data: {
-            full_name: formData.fullName,
-            dob: formData.dob,
-            mobile: formData.mobile
+            full_name: formData.fullName, // આ લાઈન નામ સેવ કરશે
+            mobile_number: formData.mobile, // આ લાઈન મોબાઈલ સેવ કરશે
+            dob: formData.dob
           }
         }
       });
@@ -78,7 +79,7 @@ export default function LoginScreen() {
     setErrorMsg('');
 
     try {
-      const fakeEmail = `${formData.mobile}@samaj.app`;
+      const fakeEmail = `${formData.mobile}@thakor.com`;
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email: fakeEmail,
@@ -96,10 +97,9 @@ export default function LoginScreen() {
   };
 
   return (
-    // ✅ ફેરફાર ૧: બેકગ્રાઉન્ડ મરૂન (#800000)
     <div className="min-h-screen bg-[#800000] flex flex-col safe-area-top safe-area-bottom relative overflow-hidden">
       
-      {/* પાછળ થોડો ગોલ્ડન ગ્લો (સજાવટ માટે) */}
+      {/* પાછળ ગોલ્ડન ગ્લો */}
       <div className="absolute top-[-50px] left-[-50px] w-60 h-60 bg-[#D4AF37] rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
 
       {/* Header */}
@@ -111,7 +111,6 @@ export default function LoginScreen() {
         >
           ઠાકોર સમાજ સંગઠન
         </motion.h1>
-        {/* ✅ ફેરફાર ૨: ટેક્સ્ટ કલર ગોલ્ડન */}
         <p className="text-[#D4AF37] text-sm font-medium tracking-wide">સ્વાગત છે 🙏</p>
       </div>
 
@@ -121,7 +120,6 @@ export default function LoginScreen() {
           onClick={() => { setActiveTab('login'); setErrorMsg(''); }}
           className={`flex-1 py-3 rounded-2xl font-gujarati font-medium transition-all ${
             activeTab === 'login'
-              // ✅ ફેરફાર ૩: એક્ટિવ ટેબ સફેદ અને મરૂન અક્ષર
               ? 'bg-white text-[#800000] shadow-lg'
               : 'bg-white/10 text-white hover:bg-white/20'
           }`}
@@ -140,7 +138,7 @@ export default function LoginScreen() {
         </button>
       </div>
 
-      {/* Content Card (White Background) */}
+      {/* Content Card */}
       <div className="flex-1 bg-white rounded-t-[2rem] px-6 pt-8 pb-6 overflow-y-auto shadow-[0_-10px_40px_rgba(0,0,0,0.2)]">
         {errorMsg && (
           <motion.div 
@@ -163,7 +161,6 @@ export default function LoginScreen() {
                 value={formData.fullName}
                 onChange={handleChange}
                 placeholder="તમારું પૂરું નામ"
-                // ✅ ફેરફાર ૪: ફોકસ રીંગ ગોલ્ડન
                 className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37] font-gujarati"
                 required
               />
@@ -226,14 +223,13 @@ export default function LoginScreen() {
             </div>
           )}
 
-          {/* ✅ ફેરફાર ૫: બટન ગોલ્ડન (Login) અથવા મરૂન (Register) */}
           <button
             type="submit"
             disabled={loading}
             className={`w-full font-gujarati font-bold py-4 rounded-2xl transition-all shadow-lg flex justify-center items-center text-white
               ${activeTab === 'login' 
-                ? 'bg-gradient-to-r from-[#D4AF37] to-[#B8860B] shadow-[#D4AF37]/30' // Login માટે ગોલ્ડન
-                : 'bg-[#800000] shadow-[#800000]/30' // Register માટે મરૂન
+                ? 'bg-gradient-to-r from-[#D4AF37] to-[#B8860B] shadow-[#D4AF37]/30'
+                : 'bg-[#800000] shadow-[#800000]/30'
               }`}
           >
             {loading ? <Loader2 className="animate-spin w-5 h-5" /> : activeTab === 'login' ? 'લોગિન કરો' : 'રજીસ્ટર કરો'}
@@ -244,7 +240,6 @@ export default function LoginScreen() {
               <button
                 type="button"
                 onClick={() => navigate('/forgot-password')}
-                // ✅ ફેરફાર ૬: લિંક કલર મરૂન
                 className="text-[#800000] text-sm font-gujarati hover:underline font-medium"
               >
                 પાસવર્ડ ભૂલી ગયા?
