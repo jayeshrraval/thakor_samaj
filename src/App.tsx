@@ -3,7 +3,7 @@ import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabase';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 
-// ✅ અહીં સુધારો કર્યો: SplashScreen ને પાછું એક્ટિવ કર્યું
+// Screens
 import SplashScreen from './screens/SplashScreen';
 import LoginScreen from "./screens/LoginScreen";
 import HomeScreen from './screens/HomeScreen';
@@ -26,13 +26,11 @@ import SamuhLagnaForm from './screens/SamuhLagnaForm';
 import AccidentalAidScreen from './screens/AccidentalAidScreen';
 import JobPostScreen from './screens/JobPostScreen';
 import SubscriptionScreen from './screens/SubscriptionScreen';
-import AIAssistantScreen from './screens/AIAssistantScreen';
+// ✅ AIAssistantScreen નું ઇમ્પોર્ટ કાઢી નાખ્યું છે
 import KrishnaChatScreen from './screens/KrishnaChatScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import AboutScreen from './screens/AboutScreen'; 
-
-// ✅ MessagesScreen ઈમ્પોર્ટ કરેલું છે
 import MessagesScreen from './screens/MessagesScreen';
 
 export default function App() {
@@ -55,7 +53,6 @@ export default function App() {
         setSession(newSession);
       });
 
-      // ✅ ૪ સેકન્ડ સુધી મરૂન સ્પ્લેશ સ્ક્રીન દેખાશે
       setTimeout(() => {
         setShowSplash(false);
         setLoading(false);
@@ -69,7 +66,6 @@ export default function App() {
     initializeApp();
   }, []);
 
-  // ✅ અહીં સુધારો કર્યો: હવે તમારી ડિઝાઈન વાળી ફાઈલ જ દેખાશે
   if (showSplash || loading) {
     return <SplashScreen />;
   }
@@ -97,7 +93,6 @@ export default function App() {
         <Route path="/matrimony" element={<ProtectedRoute><MatrimonyScreen /></ProtectedRoute>} />
         <Route path="/requests" element={<ProtectedRoute><RequestsScreen /></ProtectedRoute>} />
         
-        {/* ✅ ચેટ માટેના રાઉટ્સ */}
         <Route path="/messages" element={<ProtectedRoute><MessagesScreen /></ProtectedRoute>} />
         <Route path="/chat/:roomId" element={<ProtectedRoute><PrivateChatScreen /></ProtectedRoute>} />
         <Route path="/private-chat/:roomId" element={<ProtectedRoute><PrivateChatScreen /></ProtectedRoute>} />
@@ -113,7 +108,9 @@ export default function App() {
         <Route path="/samuh-lagna-form" element={<ProtectedRoute><SamuhLagnaForm /></ProtectedRoute>} /> 
         <Route path="/accidental-aid" element={<ProtectedRoute><AccidentalAidScreen /></ProtectedRoute>} />
         <Route path="/subscription" element={<ProtectedRoute><SubscriptionScreen /></ProtectedRoute>} />
-        <Route path="/ai-assistant" element={<ProtectedRoute><AIAssistantScreen /></ProtectedRoute>} />
+        
+        {/* ✅ AIAssistant નો રાઉટ અહીંથી કાઢી નાખ્યો છે */}
+        
         <Route path="/krishna-chat" element={<ProtectedRoute><KrishnaChatScreen /></ProtectedRoute>} /> 
         <Route path="/profile" element={<ProtectedRoute><ProfileScreen /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><SettingsScreen /></ProtectedRoute>} />

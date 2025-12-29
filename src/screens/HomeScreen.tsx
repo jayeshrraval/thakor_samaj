@@ -13,7 +13,7 @@ const NOTIFICATION_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2869
 export default function HomeScreen() {
   const navigate = useNavigate();
   
-  // ✅ ૧. શરૂઆતની વેલ્યુ લોકલ સ્ટોરેજમાંથી લો જેથી "Loading" ના થાય
+  // શરૂઆતની વેલ્યુ લોકલ સ્ટોરેજમાંથી લો જેથી "Loading" ના થાય
   const [userName, setUserName] = useState(localStorage.getItem('cached_user_name') || 'Thakorji');
   const [userPhoto, setUserPhoto] = useState(localStorage.getItem('cached_user_photo') || null);
   
@@ -59,7 +59,6 @@ export default function HomeScreen() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // ✅ ૨. યુઝર ડેટા મેળવો
         const { data: userData } = await supabase
           .from('users')
           .select('full_name, avatar_url')
@@ -71,12 +70,10 @@ export default function HomeScreen() {
           setUserName(finalName);
           setUserPhoto(userData.avatar_url);
           
-          // ✅ ૩. મેમરીમાં સેવ કરો જેથી બીજી વાર ફાસ્ટ લોડ થાય
           localStorage.setItem('cached_user_name', finalName);
           if (userData.avatar_url) localStorage.setItem('cached_user_photo', userData.avatar_url);
         }
 
-        // Stats fetching
         const { count: userCount } = await supabase.from('users').select('*', { count: 'exact', head: true });
         const { count: profileCount } = await supabase.from('matrimony_profiles').select('*', { count: 'exact', head: true });
         const { count: messageCount } = await supabase.from('messages').select('*', { count: 'exact', head: true }).eq('is_read', false);
@@ -89,7 +86,6 @@ export default function HomeScreen() {
         
         setStatsData(newStats);
         
-        // Stats પણ સેવ કરી લો
         localStorage.setItem('stat_users', newStats.totalAppUsers);
         localStorage.setItem('stat_profiles', newStats.matrimonyProfiles);
       }
@@ -100,7 +96,7 @@ export default function HomeScreen() {
     }
   };
 
-  // ... બાકીનો કોડ (featureCards, stats array વગેરે) એમને એમ જ રહેશે ...
+  // ✅ જ્ઞાન સહાયક (Bot) કાઢી નાખ્યું છે
   const featureCards = [
     { icon: Heart, title: t('મેટ્રિમોની પ્રોફાઈલ', 'Matrimony Profiles'), color: 'from-pink-500 to-rose-500', path: '/matrimony' },
     { icon: Users, title: t('પરિવાર રજીસ્ટ્રેશન', 'Family Registration'), color: 'from-[#800000] to-[#A00000]', path: '/family-list' },
@@ -109,7 +105,6 @@ export default function HomeScreen() {
     { icon: MessageCircle, title: t('મેટ્રીમોની ચેટ', 'Matrimony Chat'), color: 'from-blue-400 to-cyan-500', path: '/messages' },
     { icon: CreditCard, title: t('મેમ્બરશીપ ફી', 'Membership Fee'), color: 'from-[#D4AF37] to-yellow-600', path: '/subscription' },
     { icon: Building2, title: t('ઠાકોર સમાજ ટ્રસ્ટ', 'Thakor Samaj Trust'), color: 'from-emerald-400 to-green-500', path: '/trust' },
-    { icon: Bot, title: t('જ્ઞાન સહાયક', 'AI Assistant'), color: 'from-violet-400 to-purple-500', path: '/ai-assistant' },
   ];
 
   const stats = [
@@ -120,8 +115,6 @@ export default function HomeScreen() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 font-gujarati relative">
-       {/* UI કોડ તમારા જુના કોડ મુજબ જ રહેશે */}
-       {/* ... (બાકીનું રીટર્ન સ્ટેટમેન્ટ એમને એમ જ પેસ્ટ કરી દેજો) ... */}
        <AnimatePresence>
         {showNotificationPopup && (
           <motion.div 
@@ -158,7 +151,6 @@ export default function HomeScreen() {
               </div>
               <div>
                 <h1 className="text-white font-bold text-xl tracking-tight">
-                  {/* ✅ નમસ્તે સાથે સીધું નામ દેખાશે */}
                   {t('નમસ્તે', 'Hello')}, {userName}
                 </h1>
                 <p className="text-[#D4AF37] text-xs font-medium uppercase tracking-widest">Thakor Community Connection</p>
@@ -173,7 +165,7 @@ export default function HomeScreen() {
           </div>
         </div>
       </div>
-      {/* ... (બાકીનું UI તમારા જુના કોડ મુજબ) ... */}
+
       <motion.div
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
