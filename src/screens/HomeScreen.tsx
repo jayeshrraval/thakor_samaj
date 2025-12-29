@@ -8,24 +8,25 @@ import { motion, AnimatePresence } from 'framer-motion';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../supabaseClient';
 
-// ✅ સાઉન્ડ ફાઈલનો પાથ
 const NOTIFICATION_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'; 
 
 export default function HomeScreen() {
   const navigate = useNavigate();
-  const [userName, setUserName] = useState('Thakorji');
-  const [userPhoto, setUserPhoto] = useState(null);
+  
+  // ✅ ૧. શરૂઆતની વેલ્યુ લોકલ સ્ટોરેજમાંથી લો જેથી "Loading" ના થાય
+  const [userName, setUserName] = useState(localStorage.getItem('cached_user_name') || 'Thakorji');
+  const [userPhoto, setUserPhoto] = useState(localStorage.getItem('cached_user_photo') || null);
+  
   const [loading, setLoading] = useState(true);
   const [showNotificationPopup, setShowNotificationPopup] = useState(false);
-
   const audioRef = useRef(null);
 
   const language = localStorage.getItem('app_language') || 'Gujarati';
   const t = (gu, en) => language === 'English' ? en : gu;
 
   const [statsData, setStatsData] = useState({
-    totalAppUsers: 0,
-    matrimonyProfiles: 0,
+    totalAppUsers: parseInt(localStorage.getItem('stat_users')) || 0,
+    matrimonyProfiles: parseInt(localStorage.getItem('stat_profiles')) || 0,
     messages: 0
   });
 
@@ -39,7 +40,6 @@ export default function HomeScreen() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'matrimony_profiles' }, () => fetchDashboardData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => fetchDashboardData())
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
-           console.log("🔥 Notification Received:", payload);
            const isSoundEnabled = localStorage.getItem('notification_sound') !== 'off';
            if (isSoundEnabled && audioRef.current) {
               audioRef.current.play().catch(e => console.warn("Audio blocked:", e));
@@ -59,6 +59,7 @@ export default function HomeScreen() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        // ✅ ૨. યુઝર ડેટા મેળવો
         const { data: userData } = await supabase
           .from('users')
           .select('full_name, avatar_url')
@@ -66,19 +67,31 @@ export default function HomeScreen() {
           .maybeSingle();
 
         if (userData) {
-          setUserName(userData.full_name || user.user_metadata?.full_name || 'Thakorji');
+          const finalName = userData.full_name || user.user_metadata?.full_name || 'Thakorji';
+          setUserName(finalName);
           setUserPhoto(userData.avatar_url);
+          
+          // ✅ ૩. મેમરીમાં સેવ કરો જેથી બીજી વાર ફાસ્ટ લોડ થાય
+          localStorage.setItem('cached_user_name', finalName);
+          if (userData.avatar_url) localStorage.setItem('cached_user_photo', userData.avatar_url);
         }
 
+        // Stats fetching
         const { count: userCount } = await supabase.from('users').select('*', { count: 'exact', head: true });
         const { count: profileCount } = await supabase.from('matrimony_profiles').select('*', { count: 'exact', head: true });
         const { count: messageCount } = await supabase.from('messages').select('*', { count: 'exact', head: true }).eq('is_read', false);
 
-        setStatsData({
+        const newStats = {
             totalAppUsers: userCount || 0,
             matrimonyProfiles: profileCount || 0,
             messages: messageCount || 0
-        });
+        };
+        
+        setStatsData(newStats);
+        
+        // Stats પણ સેવ કરી લો
+        localStorage.setItem('stat_users', newStats.totalAppUsers);
+        localStorage.setItem('stat_profiles', newStats.matrimonyProfiles);
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -87,6 +100,7 @@ export default function HomeScreen() {
     }
   };
 
+  // ... બાકીનો કોડ (featureCards, stats array વગેરે) એમને એમ જ રહેશે ...
   const featureCards = [
     { icon: Heart, title: t('મેટ્રિમોની પ્રોફાઈલ', 'Matrimony Profiles'), color: 'from-pink-500 to-rose-500', path: '/matrimony' },
     { icon: Users, title: t('પરિવાર રજીસ્ટ્રેશન', 'Family Registration'), color: 'from-[#800000] to-[#A00000]', path: '/family-list' },
@@ -106,8 +120,9 @@ export default function HomeScreen() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 font-gujarati relative">
-      
-      <AnimatePresence>
+       {/* UI કોડ તમારા જુના કોડ મુજબ જ રહેશે */}
+       {/* ... (બાકીનું રીટર્ન સ્ટેટમેન્ટ એમને એમ જ પેસ્ટ કરી દેજો) ... */}
+       <AnimatePresence>
         {showNotificationPopup && (
           <motion.div 
             initial={{ opacity: 0, y: -50 }}
@@ -117,11 +132,11 @@ export default function HomeScreen() {
           >
             <div className="bg-white/95 backdrop-blur-xl border border-[#800000]/20 p-4 rounded-2xl shadow-2xl flex items-center gap-4 relative ring-1 ring-black/5">
               <div className="bg-[#800000]/10 p-3 rounded-full animate-bounce shrink-0">
-                 <Bell className="w-6 h-6 text-[#800000]" />
+                  <Bell className="w-6 h-6 text-[#800000]" />
               </div>
               <div className="flex-1 cursor-pointer" onClick={() => { navigate('/notifications'); setShowNotificationPopup(false); }}>
-                 <h3 className="font-bold text-gray-800 text-sm">{t('નવી નોટીફીકેશન આવેલ છે!', 'New Notification Received!')}</h3>
-                 <p className="text-xs text-gray-500 font-medium mt-0.5">{t('હમણાજ તપાસો', 'Check Now')}</p>
+                  <h3 className="font-bold text-gray-800 text-sm">{t('નવી નોટીફીકેશન આવેલ છે!', 'New Notification Received!')}</h3>
+                  <p className="text-xs text-gray-500 font-medium mt-0.5">{t('હમણાજ તપાસો', 'Check Now')}</p>
               </div>
               <button onClick={() => setShowNotificationPopup(false)} className="absolute top-2 right-2 text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-100 transition-colors">
                 <X size={16} />
@@ -143,7 +158,8 @@ export default function HomeScreen() {
               </div>
               <div>
                 <h1 className="text-white font-bold text-xl tracking-tight">
-                  {loading ? t('તૈયાર થઈ રહ્યું છે...', 'Loading...') : `${t('નમસ્તે', 'Hello')}, ${userName}`}
+                  {/* ✅ નમસ્તે સાથે સીધું નામ દેખાશે */}
+                  {t('નમસ્તે', 'Hello')}, {userName}
                 </h1>
                 <p className="text-[#D4AF37] text-xs font-medium uppercase tracking-widest">Thakor Community Connection</p>
               </div>
@@ -157,7 +173,7 @@ export default function HomeScreen() {
           </div>
         </div>
       </div>
-
+      {/* ... (બાકીનું UI તમારા જુના કોડ મુજબ) ... */}
       <motion.div
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
@@ -210,7 +226,6 @@ export default function HomeScreen() {
                 <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-4 shadow-lg group-hover:rotate-6 transition-transform`}>
                   <Icon className="w-6 h-6 text-white" strokeWidth={2.5} />
                 </div>
-                {/* ✅ અહીં ફેરફાર કર્યો: font-bold કાઢી નાખ્યું અને font-medium કર્યું */}
                 <h3 className="font-medium text-gray-800 text-lg leading-snug text-left tracking-tight">
                   {card.title}
                 </h3>
@@ -230,7 +245,6 @@ export default function HomeScreen() {
             ))}
         </div>
       </div>
-
       <BottomNav />
     </div>
   );
