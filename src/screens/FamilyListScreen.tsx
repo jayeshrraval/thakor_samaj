@@ -16,8 +16,8 @@ export default function FamilyListScreen() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [userMobile, setUserMobile] = useState(null);
-  
-  // ✅ નવા ઉમેરેલા State (Pagination માટે)
+   
+  // ✅ Pagination States
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
@@ -34,23 +34,16 @@ export default function FamilyListScreen() {
     };
     init();
 
-    // ✅ સ્ક્રોલ લિસનર (જ્યારે યુઝર નીચે પહોંચે ત્યારે નવો ડેટા લાવે)
+    // ✅ સ્ક્રોલ લિસનર
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // ✅ સ્ક્રોલ થાય ત્યારે આ ફંક્શન ચાલે
   const handleScroll = () => {
-    if (
-      window.innerHeight + document.documentElement.scrollTop + 1 >= document.documentElement.scrollHeight ||
-      loading
-    ) {
-      // જો યુઝર છેક નીચે પહોંચી જાય તો જ નવો ડેટા મંગાવો
-      // અહીં આપણે ચેક કરીશું કે હજુ ડેટા લાવવાનો બાકી છે કે નહિ
-    }
+    // Scroll Logic placeholder
   };
 
-  // ✅ Infinite Scroll માટે useEffect જે page બદલાય ત્યારે કોલ કરે
+  // ✅ Infinite Scroll માટે useEffect
   useEffect(() => {
     if (page > 0) {
       fetchFamilies(page);
@@ -83,11 +76,10 @@ export default function FamilyListScreen() {
         .from('families')
         .select('*')
         .order('created_at', { ascending: false })
-        .range(from, to); // ✅ સુપાબેઝને કહીએ છીએ કે ટુકડામાં ડેટા આપ
+        .range(from, to); 
 
       if (error) throw error;
 
-      // ડેટા ખલાસ થઈ ગયો હોય તો બંધ કરો
       if (data.length < PAGE_SIZE) {
         setHasMore(false);
       }
@@ -111,7 +103,6 @@ export default function FamilyListScreen() {
 
       const newFamilies = Object.values(grouped);
 
-      // ✅ જો પહેલું પેજ હોય તો રિપ્લેસ કરો, નહીંતર જૂનામાં નવું ઉમેરો (Append)
       if (pageNumber === 0) {
         setFamilies(newFamilies);
       } else {
@@ -131,7 +122,6 @@ export default function FamilyListScreen() {
       const { error } = await supabase.from('families').delete().eq('id', memberId);
       if (error) alert(error.message);
       else {
-        // ડિલીટ કર્યા પછી લિસ્ટ રિફ્રેશ કરવા માટે (અત્યારે સાદી રીતે પેજ 0 લાવીએ)
         setPage(0);
         fetchFamilies(0); 
       }
@@ -145,18 +135,25 @@ export default function FamilyListScreen() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 font-gujarati">
-      <div className="bg-gradient-to-r from-deep-blue to-[#1A8FA3] safe-area-top shadow-lg">
-        <div className="px-6 py-6">
+      
+      {/* ✅ Header: Maroon with Gold Glow */}
+      <div className="bg-[#800000] safe-area-top shadow-lg relative overflow-hidden">
+         {/* Glow Effects */}
+         <div className="absolute top-[-50%] left-[-10%] w-64 h-64 bg-[#D4AF37] rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
+         
+        <div className="px-6 py-6 relative z-10">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-3">
-              <button onClick={() => navigate('/')} className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+              <button onClick={() => navigate('/')} className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-all">
                 <ArrowLeft className="w-5 h-5 text-white" />
               </button>
               <h1 className="text-white font-bold text-2xl">પરિવાર લિસ્ટ</h1>
             </div>
+            
+            {/* ✅ Add Button: Gold Color */}
             <button 
               onClick={() => navigate('/family-registration')}
-              className="bg-mint text-deep-blue p-2 rounded-xl flex items-center gap-2 font-bold text-sm shadow-lg active:scale-95 transition-all"
+              className="bg-[#D4AF37] text-white p-2 px-4 rounded-xl flex items-center gap-2 font-bold text-sm shadow-lg active:scale-95 transition-all"
             >
               <UserPlus size={18} /> ઉમેરો
             </button>
@@ -169,7 +166,7 @@ export default function FamilyListScreen() {
               placeholder="પરિવાર અથવા ગામ શોધો..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white/95 backdrop-blur-sm border-none rounded-2xl py-4 pl-12 pr-4 shadow-xl outline-none font-gujarati"
+              className="w-full bg-white/95 backdrop-blur-sm border-none rounded-2xl py-4 pl-12 pr-4 shadow-xl outline-none font-gujarati text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-[#D4AF37]"
             />
           </div>
         </div>
@@ -177,9 +174,14 @@ export default function FamilyListScreen() {
 
       <div className="px-6 py-6">
         {loading && page === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20"><Loader2 className="w-10 h-10 animate-spin text-deep-blue" /></div>
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="w-10 h-10 animate-spin text-[#800000]" />
+          </div>
         ) : filteredFamilies.length === 0 ? (
-          <div className="text-center py-20"><Users className="w-16 h-16 text-gray-200 mx-auto mb-4" /><p className="text-gray-500 font-bold">કોઈ માહિતી મળી નથી</p></div>
+          <div className="text-center py-20">
+            <Users className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+            <p className="text-gray-500 font-bold">કોઈ માહિતી મળી નથી</p>
+          </div>
         ) : (
           <div className="space-y-6">
             <AnimatePresence>
@@ -188,27 +190,26 @@ export default function FamilyListScreen() {
                   m.member_mobile === userMobile || m.mobile_number === userMobile
                 );
 
-                // કી યુનિક રાખવા માટે index નો ઉપયોગ (જો કદાચ ડુપ્લીકેટ આવે તો એરર ના આવે)
                 return (
                   <motion.div
                     key={`${family.id}-${index}`}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden"
+                    className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow"
                   >
                     <div className="p-5 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center">
                       <div>
                         <h3 className="font-bold text-gray-800 text-lg leading-tight">{family.head_name}</h3>
                         <div className="flex items-center text-gray-500 text-xs gap-1 mt-1">
-                          <MapPin size={12} className="text-orange-500" />
+                          <MapPin size={12} className="text-[#D4AF37]" /> {/* Gold Pin */}
                           <span>{family.village}, {family.district}</span>
                         </div>
-                        <div className="flex items-center text-deep-blue text-xs gap-1 mt-1.5 font-bold">
+                        <div className="flex items-center text-[#800000] text-xs gap-1 mt-1.5 font-bold">
                           <Phone size={12} />
                           <span>{family.mobile_number || 'નંબર નથી'}</span>
                         </div>
                       </div>
-                      <span className="bg-deep-blue/10 text-deep-blue px-3 py-1 rounded-full text-xs font-bold">
+                      <span className="bg-[#800000]/10 text-[#800000] px-3 py-1 rounded-full text-xs font-bold">
                         {family.members.length} સભ્યો
                       </span>
                     </div>
@@ -226,7 +227,7 @@ export default function FamilyListScreen() {
                               <button onClick={() => removeMember(m.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors">
                                 <Trash2 size={16} />
                               </button>
-                              <button onClick={() => navigate(`/family-registration`)} className="p-2 text-blue-400 hover:bg-blue-50 rounded-lg transition-colors">
+                              <button onClick={() => navigate(`/family-registration`)} className="p-2 text-[#800000] hover:bg-red-50 rounded-lg transition-colors">
                                 <Edit2 size={16} />
                               </button>
                             </div>
@@ -239,10 +240,9 @@ export default function FamilyListScreen() {
               })}
             </AnimatePresence>
             
-            {/* ✅ નીચે ડેટા લોડ થાય ત્યારે લોડર બતાવવા માટે */}
             {isFetchingMore && (
               <div className="flex justify-center py-4">
-                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                <Loader2 className="w-6 h-6 animate-spin text-[#800000]" />
               </div>
             )}
           </div>

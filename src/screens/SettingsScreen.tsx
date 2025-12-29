@@ -8,12 +8,12 @@ import { supabase } from '../supabaseClient';
 export default function SettingsScreen() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  
+   
   // ✅ સ્ટેટ મેમરી (LocalStorage) માંથી ડેટા લેશે
   const [soundEnabled, setSoundEnabled] = useState(() => {
      return localStorage.getItem('notification_sound') !== 'off'; 
   });
-  
+   
   const [language, setLanguage] = useState(() => {
      return localStorage.getItem('app_language') || 'Gujarati'; 
   });
@@ -23,7 +23,7 @@ export default function SettingsScreen() {
   // Password Modal State
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassword, setNewPassword] = useState('');
-  
+   
   // ✅ ૧. વોટ્સએપ સપોર્ટ ફંક્શન
   const openWhatsAppSupport = () => {
     const phoneNumber = "919714443758"; 
@@ -38,10 +38,10 @@ export default function SettingsScreen() {
       title: 'Account',
       titleGu: 'એકાઉન્ટ',
       items: [
-        { icon: User, label: 'Edit Profile', labelGu: 'પ્રોફાઈલ એડિટ કરો', path: '/profile' },
-        { icon: Key, label: 'Change Password', labelGu: 'પાસવર્ડ બદલો', action: 'password' },
+        { icon: User, label: 'Edit Profile', labelGu: 'પ્રોફાઈલ એડિટ કરો', path: '/profile', color: 'text-[#800000]' },
+        { icon: Key, label: 'Change Password', labelGu: 'પાસવર્ડ બદલો', action: 'password', color: 'text-[#800000]' },
         // ✅ ભાષાનું નામ પણ બદલાશે
-        { icon: Globe, label: `Current: ${language}`, labelGu: `ભાષા: ${language}`, action: 'language' },
+        { icon: Globe, label: `Current: ${language}`, labelGu: `ભાષા: ${language}`, action: 'language', color: 'text-[#800000]' },
       ],
     },
     {
@@ -53,23 +53,23 @@ export default function SettingsScreen() {
             label: `Sound is ${soundEnabled ? 'On' : 'Off'}`, 
             labelGu: `નોટીફિકેશન સાઉન્ડ: ${soundEnabled ? 'ચાલુ' : 'બંધ'}`, 
             action: 'notifications',
-            color: soundEnabled ? 'text-green-600' : 'text-gray-400'
+            color: soundEnabled ? 'text-[#B8860B]' : 'text-gray-400' // Gold when active
         },
-        { icon: Lock, label: 'Privacy', labelGu: 'પ્રાઈવસી & નિયમો', path: '/about' },
+        { icon: Lock, label: 'Privacy', labelGu: 'પ્રાઈવસી & નિયમો', path: '/about', color: 'text-[#800000]' },
       ],
     },
     {
       title: 'Support',
       titleGu: 'સહાય',
       items: [
-        { icon: HelpCircle, label: 'Help & Support', labelGu: 'સહાય અને સપોર્ટ', action: 'support' },
+        { icon: HelpCircle, label: 'Help & Support', labelGu: 'સહાય અને સપોર્ટ', action: 'support', color: 'text-[#800000]' },
         { icon: Trash2, label: 'Delete Account', labelGu: 'એકાઉન્ટ ડિલીટ કરો', action: 'delete_account', color: 'text-red-500' },
       ],
     },
   ];
 
   // 🕹️ Handle Actions
-  const handleAction = async (action: string) => {
+  const handleAction = async (action) => {
     if (action === 'password') {
       setShowPasswordModal(true);
     } 
@@ -128,7 +128,7 @@ export default function SettingsScreen() {
         alert('તમારું એકાઉન્ટ ડિલીટ થઈ ગયું છે. બાય બાય! 👋');
         await supabase.auth.signOut();
         navigate('/');
-      } catch (error: any) {
+      } catch (error) {
         console.error(error);
         alert('એકાઉન્ટ ડિલીટ કરવામાં સમસ્યા આવી: ' + error.message);
       } finally {
@@ -146,24 +146,28 @@ export default function SettingsScreen() {
     }
   };
 
-  // ✅ ભાષા સિલેક્શન અને સેવ + રીલોડ (જેથી આખી એપમાં બદલાય)
-  const handleLanguageSelect = (selectedLang: string) => {
+  // ✅ ભાષા સિલેક્શન અને સેવ + રીલોડ
+  const handleLanguageSelect = (selectedLang) => {
       setLanguage(selectedLang);
       localStorage.setItem('app_language', selectedLang); 
       setShowLanguageModal(false);
-      // પેજ રીલોડ કરવું પડશે જેથી આખી એપમાં ભાષા બદલાઈ જાય
       window.location.reload();
   };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-500 to-indigo-500 safe-area-top px-6 py-6">
-        <h1 className="text-white font-gujarati font-bold text-2xl">
-            {/* ✅ હેડર ભાષા મુજબ બદલાશે */}
-            {language === 'English' ? 'Settings' : 'સેટિંગ્સ'}
-        </h1>
-        <p className="text-white/80 text-sm">Settings & Account Options</p>
+      
+      {/* Header: Maroon with Gold Glow */}
+      <div className="bg-[#800000] safe-area-top px-6 py-6 shadow-md relative overflow-hidden">
+        {/* Glow Effects */}
+        <div className="absolute top-[-50%] left-[-10%] w-64 h-64 bg-[#D4AF37] rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
+
+        <div className="relative z-10">
+            <h1 className="text-white font-gujarati font-bold text-2xl">
+                {language === 'English' ? 'Settings' : 'સેટિંગ્સ'}
+            </h1>
+            <p className="text-[#D4AF37] text-xs font-medium">Settings & Account Options</p>
+        </div>
       </div>
 
       <div className="px-6 py-6 space-y-6">
@@ -176,17 +180,14 @@ export default function SettingsScreen() {
             className="space-y-3"
           >
             <div className="px-2">
-              <h3 className="font-gujarati font-bold text-gray-800">
-                  {/* ✅ ગ્રુપ ટાઈટલ ભાષા મુજબ બદલાશે */}
+              <h3 className="font-gujarati font-bold text-gray-800 text-lg">
                   {language === 'English' ? group.title : group.titleGu}
               </h3>
-              <p className="text-xs text-gray-500">{language === 'English' ? group.titleGu : group.title}</p>
             </div>
-            <div className="premium-card overflow-hidden">
+            <div className="bg-white rounded-[20px] shadow-sm border border-gray-100 overflow-hidden">
               {group.items.map((item, itemIndex) => {
                 const Icon = item.icon;
                 
-                // ✅ મેઈન સુધારો: ભાષા મુજબ ટેક્સ્ટ બદલવાનું લોજિક
                 const mainText = language === 'English' ? item.label : item.labelGu;
                 const subText = language === 'English' ? item.labelGu : item.label;
 
@@ -194,28 +195,27 @@ export default function SettingsScreen() {
                   <button
                     key={itemIndex}
                     onClick={() => item.path ? navigate(item.path) : handleAction(item.action || '')}
-                    className={`w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors ${
+                    className={`w-full flex items-center justify-between p-4 hover:bg-[#800000]/5 transition-colors ${
                       itemIndex !== group.items.length - 1 ? 'border-b border-gray-100' : ''
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <div className={`w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center`}>
+                      <div className={`w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center`}>
                         <Icon className={`w-5 h-5 ${item.color || 'text-gray-600'}`} />
                       </div>
                       <div className="text-left">
-                        {/* ✅ અહીં હવે ડાયનેમિક ટેક્સ્ટ આવશે */}
-                        <p className={`font-gujarati font-medium ${item.color || 'text-gray-800'}`}>{mainText}</p>
-                        <p className="text-xs text-gray-500">{subText}</p>
+                        <p className={`font-gujarati font-bold text-sm ${item.color || 'text-gray-800'}`}>{mainText}</p>
+                        <p className="text-[10px] text-gray-400">{subText}</p>
                       </div>
                     </div>
                     
                     {/* Toggle Indicator for Notifications */}
                     {item.action === 'notifications' ? (
-                        <div className={`w-10 h-6 rounded-full p-1 transition-colors ${soundEnabled ? 'bg-green-500' : 'bg-gray-300'}`}>
+                        <div className={`w-10 h-6 rounded-full p-1 transition-colors ${soundEnabled ? 'bg-[#D4AF37]' : 'bg-gray-300'}`}>
                             <div className={`w-4 h-4 bg-white rounded-full shadow-md transition-transform ${soundEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
                         </div>
                     ) : (
-                        <ChevronRight className="w-5 h-5 text-gray-400" />
+                        <ChevronRight className="w-5 h-5 text-gray-300" />
                     )}
                   </button>
                 );
@@ -230,10 +230,10 @@ export default function SettingsScreen() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
           onClick={handleLogout}
-          className="w-full premium-card p-4 flex items-center justify-center space-x-3 hover:shadow-elevated transition-all active:scale-98 border-2 border-red-100"
+          className="w-full bg-white rounded-[20px] p-4 flex items-center justify-center space-x-3 hover:shadow-md transition-all active:scale-98 border-2 border-red-50"
         >
           <LogOut className="w-6 h-6 text-red-500" />
-          <span className="font-gujarati font-semibold text-red-500 text-lg">
+          <span className="font-gujarati font-bold text-red-500 text-lg">
              {language === 'English' ? 'Logout' : 'લૉગઆઉટ કરો'}
           </span>
         </motion.button>
@@ -242,15 +242,15 @@ export default function SettingsScreen() {
       {/* CHANGE PASSWORD MODAL */}
       <AnimatePresence>
         {showPasswordModal && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4">
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4 backdrop-blur-sm">
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl"
+              className="bg-white w-full max-w-sm rounded-[30px] p-6 shadow-2xl"
             >
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold font-gujarati text-gray-800">પાસવર્ડ બદલો</h3>
+                <h3 className="text-xl font-bold font-gujarati text-[#800000]">પાસવર્ડ બદલો</h3>
                 <button onClick={() => setShowPasswordModal(false)} className="p-1 bg-gray-100 rounded-full">
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
@@ -264,14 +264,14 @@ export default function SettingsScreen() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="ઓછામાં ઓછા 6 અક્ષર"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
                   />
                 </div>
 
                 <button 
                   onClick={handleChangePassword}
                   disabled={loading}
-                  className="w-full bg-blue-600 text-white py-3 rounded-xl font-gujarati font-bold flex items-center justify-center space-x-2"
+                  className="w-full bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white py-3 rounded-xl font-gujarati font-bold flex items-center justify-center space-x-2 shadow-lg"
                 >
                   {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <Check className="w-5 h-5" />}
                   <span>સેવ કરો</span>
@@ -285,15 +285,15 @@ export default function SettingsScreen() {
       {/* 🌐 LANGUAGE SELECTION MODAL */}
       <AnimatePresence>
         {showLanguageModal && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4">
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4 backdrop-blur-sm">
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl"
+              className="bg-white w-full max-w-sm rounded-[30px] p-6 shadow-2xl"
             >
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold font-gujarati text-gray-800">ભાષા પસંદ કરો</h3>
+                <h3 className="text-xl font-bold font-gujarati text-[#800000]">ભાષા પસંદ કરો</h3>
                 <button onClick={() => setShowLanguageModal(false)} className="p-1 bg-gray-100 rounded-full">
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
@@ -305,13 +305,15 @@ export default function SettingsScreen() {
                         key={lang}
                         onClick={() => handleLanguageSelect(lang)}
                         className={`w-full p-4 rounded-xl flex items-center justify-between border-2 transition-all ${
-                            language === lang ? 'border-blue-500 bg-blue-50' : 'border-gray-100 hover:bg-gray-50'
+                            language === lang 
+                            ? 'border-[#800000] bg-[#800000]/5' 
+                            : 'border-gray-100 hover:bg-gray-50'
                         }`}
                     >
-                        <span className={`font-bold ${language === lang ? 'text-blue-600' : 'text-gray-700'}`}>
+                        <span className={`font-bold ${language === lang ? 'text-[#800000]' : 'text-gray-700'}`}>
                             {lang}
                         </span>
-                        {language === lang && <Check className="w-5 h-5 text-blue-600" />}
+                        {language === lang && <Check className="w-5 h-5 text-[#800000]" />}
                     </button>
                 ))}
               </div>

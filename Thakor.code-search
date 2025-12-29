@@ -1,0 +1,58 @@
+# Query: Thakor
+# Flags: WordMatch
+# ContextLines: 1
+
+12 results - 9 files
+
+capacitor.config.ts:
+  2    appId: 'com.thakorsamajsangathan.app',
+  3:   appName: 'Thakor Samaj Sangathan',
+  4    webDir: 'dist',
+
+package-lock.json:
+  1  {
+  2:   "name": "thakor-samaj-sangathan",
+  3    "version": "1.0.0",
+
+  7      "": {
+  8:       "name": "thakor-samaj-sangathan",
+  9        "version": "1.0.0",
+
+package.json:
+  1  {
+  2:   "name": "thakor-samaj-sangathan",
+  3    "private": true,
+
+YOUWARE.md:
+  4  
+  5: **ઠાકોર સમાજ સંગઠન (Thakor Samaj Sangathan)** is a premium Gujarati matrimony and community mobile web application built for the Thakor Samaj community. Includes **family registration system** and **education hub module** with real backend data persistence.
+  6  
+
+android\app\src\main\res\values\strings.xml:
+  3      <string name="app_name">ઠાકોર સમાજ સંગઠન</string>
+  4:     <string name="title_activity_main">Thakor Samaj Sangathan</string>
+  5      <string name="package_name">com.thakorsamajsangathan.app</string>
+
+src\screens\AboutScreen.tsx:
+  100              <p className="text-[10px] text-gray-400 font-bold flex items-center justify-center gap-1 uppercase tracking-widest">
+  101:               Developed with <Heart size={10} className="text-red-500 fill-red-500" /> by Thakor Samaj Sangathan Team
+  102              </p>
+
+src\screens\HomeScreen.tsx:
+  144      { icon: CreditCard, title: t('મેમ્બરશીપ ફી', 'Membership Fee'), color: 'from-royal-gold to-yellow-600', path: '/subscription' },
+  145:     { icon: Building2, title: t('ઠાકોર સમાજ ટ્રસ્ટ', 'Thakor Samaj Trust'), color: 'from-emerald-400 to-green-500', path: '/trust' },
+  146      { icon: Bot, title: t('જ્ઞાન સહાયક', 'AI Assistant'), color: 'from-violet-400 to-purple-500', path: '/ai-assistant' },
+
+  203                  </h1>
+  204:                 <p className="text-mint text-xs font-medium uppercase tracking-widest">Thakor Community Connection</p>
+  205                </div>
+
+src\screens\ProfileScreen.tsx:
+  233  
+  234:         <p className="text-center text-gray-400 text-xs mt-4">Version 1.0.0 • Thakor Samaj Sangathan</p>
+  235        </div>
+
+src\theme\index.ts:
+  2   * Theme System Entry Point
+  3:  * Thakor Samaj Sangathan Design System
+  4   */

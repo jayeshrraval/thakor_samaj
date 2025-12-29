@@ -1,5 +1,5 @@
 {
-  "name": "yogi-samaj-sambandh",
+  "name": "thakor-samaj-sangathan",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -13,6 +13,7 @@
     "@capacitor/android": "^8.0.0",
     "@capacitor/core": "^8.0.0",
     "@capgo/capacitor-updater": "^8.40.4",
+    "@emotion/is-prop-valid": "^1.4.0",
     "@headlessui/react": "^1.7.18",
     "@supabase/supabase-js": "^2.47.10",
     "ai": "^4.0.0",

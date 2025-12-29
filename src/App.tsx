@@ -3,6 +3,7 @@ import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabase';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 
+// ✅ અહીં સુધારો કર્યો: SplashScreen ને પાછું એક્ટિવ કર્યું
 import SplashScreen from './screens/SplashScreen';
 import LoginScreen from "./screens/LoginScreen";
 import HomeScreen from './screens/HomeScreen';
@@ -54,6 +55,7 @@ export default function App() {
         setSession(newSession);
       });
 
+      // ✅ ૪ સેકન્ડ સુધી મરૂન સ્પ્લેશ સ્ક્રીન દેખાશે
       setTimeout(() => {
         setShowSplash(false);
         setLoading(false);
@@ -67,6 +69,7 @@ export default function App() {
     initializeApp();
   }, []);
 
+  // ✅ અહીં સુધારો કર્યો: હવે તમારી ડિઝાઈન વાળી ફાઈલ જ દેખાશે
   if (showSplash || loading) {
     return <SplashScreen />;
   }
@@ -94,10 +97,9 @@ export default function App() {
         <Route path="/matrimony" element={<ProtectedRoute><MatrimonyScreen /></ProtectedRoute>} />
         <Route path="/requests" element={<ProtectedRoute><RequestsScreen /></ProtectedRoute>} />
         
-        {/* ✅ ચેટ માટેના રાઉટ્સ (બંને લિંક સપોર્ટ કરશે) */}
+        {/* ✅ ચેટ માટેના રાઉટ્સ */}
         <Route path="/messages" element={<ProtectedRoute><MessagesScreen /></ProtectedRoute>} />
         <Route path="/chat/:roomId" element={<ProtectedRoute><PrivateChatScreen /></ProtectedRoute>} />
-        {/* 👇 આ જૂની લિંક ઉમેરી જેથી જૂના પેજ પરથી પણ ચેટ ખૂલે 👇 */}
         <Route path="/private-chat/:roomId" element={<ProtectedRoute><PrivateChatScreen /></ProtectedRoute>} />
         
         <Route path="/general-chat" element={<ProtectedRoute><GeneralChatScreen /></ProtectedRoute>} />

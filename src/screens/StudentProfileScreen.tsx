@@ -18,10 +18,10 @@ const studyLevelOptions = [
 
 export default function StudentProfileScreen() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'list' | 'register'>('list');
-  const [students, setStudents] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState('list');
+  const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+   
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filterStudyLevel, setFilterStudyLevel] = useState('');
@@ -42,7 +42,7 @@ export default function StudentProfileScreen() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [formErrors, setFormErrors] = useState<any>({});
+  const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     fetchStudents();
@@ -51,7 +51,6 @@ export default function StudentProfileScreen() {
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      // ફેરફાર: 'students' ને બદલે 'student_profiles' વાપર્યું
       let query = supabase
         .from('student_profiles')
         .select('*')
@@ -70,7 +69,7 @@ export default function StudentProfileScreen() {
       const { data, error } = await query;
       if (error) throw error;
       setStudents(data || []);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Fetch Error:', error.message);
     } finally {
       setLoading(false);
@@ -78,7 +77,7 @@ export default function StudentProfileScreen() {
   };
 
   const validateForm = () => {
-    const errors: any = {};
+    const errors = {};
     if (!formData.fullName.trim()) errors.fullName = 'પૂરું નામ જરૂરી છે';
     if (!formData.age) errors.age = 'ઉંમર નાખો';
     if (!formData.studyLevel) errors.studyLevel = 'અભ્યાસ લેવલ પસંદ કરો';
@@ -98,7 +97,6 @@ export default function StudentProfileScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("પ્લીઝ લોગીન કરો");
 
-      // ફેરફાર: 'students' ને બદલે 'student_profiles' માં ઇન્સર્ટ કર્યું
       const { error } = await supabase
         .from('student_profiles')
         .insert([{
@@ -130,8 +128,7 @@ export default function StudentProfileScreen() {
         fetchStudents();
       }, 2000);
 
-    } catch (error: any) {
-        console.error('Submit Error:', error.message);
+    } catch (error) {
         alert(error.message);
     } finally {
         setIsSubmitting(false);
@@ -140,23 +137,34 @@ export default function StudentProfileScreen() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* Header - No changes needed */}
-      <div className="bg-gradient-to-r from-deep-blue to-[#1A8FA3] safe-area-top shadow-lg">
-        <div className="px-6 py-6 flex items-center space-x-4">
-          <button onClick={() => navigate('/education')} className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+      
+      {/* ✅ Header: Maroon with Gold Glow */}
+      <div className="bg-[#800000] safe-area-top shadow-lg relative overflow-hidden">
+        {/* Glow Effects */}
+        <div className="absolute top-[-50%] left-[-10%] w-64 h-64 bg-[#D4AF37] rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
+
+        <div className="px-6 py-6 flex items-center space-x-4 relative z-10">
+          <button onClick={() => navigate('/education')} className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-all">
             <ArrowLeft className="w-5 h-5 text-white" />
           </button>
           <div>
             <h1 className="text-white font-gujarati font-bold text-xl">વિદ્યાર્થી પ્રોફાઈલ</h1>
-            <p className="text-mint text-xs font-medium uppercase tracking-widest">Yogi Students</p>
+            <p className="text-[#D4AF37] text-xs font-medium uppercase tracking-widest">Yogi Students</p>
           </div>
         </div>
 
-        <div className="flex px-6 pb-4 space-x-4">
-          <button onClick={() => setActiveTab('list')} className={`flex-1 py-3 rounded-2xl font-gujarati font-bold transition-all text-sm flex items-center justify-center gap-2 ${activeTab === 'list' ? 'bg-white text-deep-blue shadow-xl' : 'bg-white/10 text-white'}`}>
+        {/* Tabs */}
+        <div className="flex px-6 pb-4 space-x-4 relative z-10">
+          <button 
+            onClick={() => setActiveTab('list')} 
+            className={`flex-1 py-3 rounded-2xl font-gujarati font-bold transition-all text-sm flex items-center justify-center gap-2 ${activeTab === 'list' ? 'bg-white text-[#800000] shadow-xl' : 'bg-white/10 text-white'}`}
+          >
             <Search size={16} /> પ્રોફાઈલ જુઓ
           </button>
-          <button onClick={() => setActiveTab('register')} className={`flex-1 py-3 rounded-2xl font-gujarati font-bold transition-all text-sm flex items-center justify-center gap-2 ${activeTab === 'register' ? 'bg-white text-deep-blue shadow-xl' : 'bg-white/10 text-white'}`}>
+          <button 
+            onClick={() => setActiveTab('register')} 
+            className={`flex-1 py-3 rounded-2xl font-gujarati font-bold transition-all text-sm flex items-center justify-center gap-2 ${activeTab === 'register' ? 'bg-white text-[#800000] shadow-xl' : 'bg-white/10 text-white'}`}
+          >
             <Plus size={16} /> નવી નોંધણી
           </button>
         </div>
@@ -167,17 +175,28 @@ export default function StudentProfileScreen() {
           <>
             <div className="flex space-x-3 mb-6">
               <div className="flex-1 relative">
-                <input type="text" placeholder="નામ, ગામ અથવા ક્ષેત્ર શોધો..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && fetchStudents()} className="w-full pl-11 pr-4 py-3.5 rounded-2xl border-none shadow-sm focus:ring-2 focus:ring-mint font-gujarati text-sm" />
+                <input 
+                    type="text" 
+                    placeholder="નામ, ગામ અથવા ક્ષેત્ર શોધો..." 
+                    value={searchQuery} 
+                    onChange={(e) => setSearchQuery(e.target.value)} 
+                    onKeyDown={(e) => e.key === 'Enter' && fetchStudents()} 
+                    className="w-full pl-11 pr-4 py-3.5 rounded-2xl border-none shadow-sm focus:ring-2 focus:ring-[#D4AF37] font-gujarati text-sm" 
+                />
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               </div>
-              <button onClick={() => setShowFilters(!showFilters)} className={`p-3.5 rounded-2xl shadow-sm transition-all ${showFilters ? 'bg-mint text-white' : 'bg-white text-gray-500'}`}>
+              {/* Filter Button */}
+              <button 
+                onClick={() => setShowFilters(!showFilters)} 
+                className={`p-3.5 rounded-2xl shadow-sm transition-all ${showFilters ? 'bg-[#D4AF37] text-white' : 'bg-white text-gray-500'}`}
+              >
                 <Filter size={20} />
               </button>
             </div>
 
             <AnimatePresence>
               {showFilters && (
-                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="bg-white p-5 rounded-2xl shadow-sm mb-6 border border-mint/10 overflow-hidden">
+                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="bg-white p-5 rounded-2xl shadow-sm mb-6 border border-[#D4AF37]/20 overflow-hidden">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[10px] font-black text-gray-400 uppercase mb-1 block">અભ્યાસ લેવલ</label>
@@ -187,7 +206,7 @@ export default function StudentProfileScreen() {
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-gray-400 uppercase mb-1 block">ગોળ (Text)</label>
+                      <label className="text-[10px] font-black text-gray-400 uppercase mb-1 block">ગોળ</label>
                       <input type="text" placeholder="ગોળ લખો..." value={filterGol} onChange={(e) => setFilterGol(e.target.value)} className="w-full p-3 bg-gray-50 border-none rounded-xl text-xs font-bold font-gujarati outline-none" />
                     </div>
                   </div>
@@ -196,27 +215,34 @@ export default function StudentProfileScreen() {
             </AnimatePresence>
 
             {loading ? (
-                <div className="flex justify-center py-20"><Loader2 className="animate-spin text-mint" size={40} /></div>
+                <div className="flex justify-center py-20"><Loader2 className="animate-spin text-[#800000]" size={40} /></div>
             ) : students.length === 0 ? (
-                <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-gray-100"><p className="text-gray-400 font-gujarati">કોઈ વિદ્યાર્થી મળ્યા નથી.</p></div>
+                <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-gray-100">
+                    <p className="text-gray-400 font-gujarati">કોઈ વિદ્યાર્થી મળ્યા નથી.</p>
+                </div>
             ) : (
                 <div className="space-y-4">
                   {students.map((student) => (
-                    <motion.div key={student.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white p-5 rounded-[30px] shadow-sm border border-gray-100">
+                    <motion.div key={student.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white p-5 rounded-[30px] shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                         <div className="flex items-start justify-between mb-4">
                             <div className="flex items-center space-x-3">
-                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-mint to-teal-500 flex items-center justify-center text-white shadow-lg"><User size={24}/></div>
+                                {/* ✅ Gold Gradient Avatar */}
+                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#D4AF37] to-[#B8860B] flex items-center justify-center text-white shadow-lg">
+                                    <User size={24}/>
+                                </div>
                                 <div>
                                     <h3 className="font-gujarati font-bold text-gray-800 text-base">{student.full_name}</h3>
-                                    <p className="text-mint text-[10px] font-black uppercase tracking-tighter">{student.age} વર્ષ • {student.gol}</p>
+                                    {/* ✅ Maroon Text */}
+                                    <p className="text-[#800000] text-[10px] font-black uppercase tracking-tighter">{student.age} વર્ષ • {student.gol}</p>
                                 </div>
                             </div>
-                            {student.is_first_graduate && <div className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-lg text-[10px] font-bold">1st GRADUATE</div>}
+                            {/* Gold Badge for 1st Graduate */}
+                            {student.is_first_graduate && <div className="bg-[#D4AF37]/10 text-[#B8860B] px-2 py-1 rounded-lg text-[10px] font-bold border border-[#D4AF37]/20">1st GRADUATE</div>}
                         </div>
                         <div className="space-y-2 text-[13px] text-gray-600 font-gujarati pl-1">
-                            <div className="flex items-center gap-2"><GraduationCap className="text-gray-400" size={16}/> <span>{student.study_level} - {student.field_of_study}</span></div>
-                            <div className="flex items-center gap-2"><MapPin className="text-gray-400" size={16}/> <span>{student.village}, {student.district}</span></div>
-                            {student.future_goal && <div className="bg-gray-50 p-3 rounded-2xl mt-2 flex gap-2 italic"><Target className="text-orange-400 shrink-0" size={16}/> <span>{student.future_goal}</span></div>}
+                            <div className="flex items-center gap-2"><GraduationCap className="text-[#D4AF37]" size={16}/> <span>{student.study_level} - {student.field_of_study}</span></div>
+                            <div className="flex items-center gap-2"><MapPin className="text-[#D4AF37]" size={16}/> <span>{student.village}, {student.district}</span></div>
+                            {student.future_goal && <div className="bg-gray-50 p-3 rounded-2xl mt-2 flex gap-2 italic"><Target className="text-[#800000] shrink-0" size={16}/> <span>{student.future_goal}</span></div>}
                         </div>
                     </motion.div>
                   ))}
@@ -226,44 +252,45 @@ export default function StudentProfileScreen() {
         ) : (
           <div className="space-y-5">
             <div className="bg-white p-6 rounded-[35px] shadow-sm border border-gray-50 space-y-4 font-gujarati">
-                <h3 className="font-bold text-gray-800 border-b pb-2 mb-4">વિદ્યાર્થીની માહિતી</h3>
+                <h3 className="font-bold text-[#800000] border-b border-gray-100 pb-2 mb-4">વિદ્યાર્થીની માહિતી</h3>
                 
                 <div>
                    <label className="text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">પૂરું નામ *</label>
-                   <input type="text" value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} className="w-full px-5 py-3.5 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-mint font-bold" placeholder="નામ લખો" />
+                   <input type="text" value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} className="w-full px-5 py-3.5 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-[#D4AF37] font-bold" placeholder="નામ લખો" />
                    {formErrors.fullName && <p className="text-red-500 text-[10px] mt-1 ml-1">{formErrors.fullName}</p>}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                       <label className="text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">ઉંમર *</label>
-                       <input type="number" value={formData.age} onChange={(e) => setFormData({...formData, age: e.target.value})} className="w-full px-5 py-3.5 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-mint font-bold" />
+                        <label className="text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">ઉંમર *</label>
+                        <input type="number" value={formData.age} onChange={(e) => setFormData({...formData, age: e.target.value})} className="w-full px-5 py-3.5 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-[#D4AF37] font-bold" />
                     </div>
                     <div>
-                       <label className="text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">અભ્યાસ લેવલ *</label>
-                       <select value={formData.studyLevel} onChange={(e) => setFormData({...formData, studyLevel: e.target.value})} className="w-full px-5 py-3.5 bg-gray-50 border-none rounded-2xl font-bold appearance-none">
+                        <label className="text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">અભ્યાસ લેવલ *</label>
+                        <select value={formData.studyLevel} onChange={(e) => setFormData({...formData, studyLevel: e.target.value})} className="w-full px-5 py-3.5 bg-gray-50 border-none rounded-2xl font-bold appearance-none focus:ring-2 focus:ring-[#D4AF37]">
                           <option value="">પસંદ કરો</option>
                           {studyLevelOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                       </select>
+                        </select>
                     </div>
                 </div>
 
                 <div>
                    <label className="text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">અભ્યાસ ક્ષેત્ર *</label>
-                   <input type="text" value={formData.fieldOfStudy} onChange={(e) => setFormData({...formData, fieldOfStudy: e.target.value})} className="w-full px-5 py-3.5 bg-gray-50 border-none rounded-2xl font-bold" placeholder="દા.ત. Science, IT" />
+                   <input type="text" value={formData.fieldOfStudy} onChange={(e) => setFormData({...formData, fieldOfStudy: e.target.value})} className="w-full px-5 py-3.5 bg-gray-50 border-none rounded-2xl font-bold focus:ring-2 focus:ring-[#D4AF37]" placeholder="દા.ત. Science, IT" />
                 </div>
 
                 <div>
                    <label className="text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">ગોળ *</label>
-                   <input type="text" value={formData.gol} onChange={(e) => setFormData({...formData, gol: e.target.value})} className="w-full px-5 py-3.5 bg-gray-50 border-none rounded-2xl font-bold" placeholder="ગોળ લખો" />
+                   <input type="text" value={formData.gol} onChange={(e) => setFormData({...formData, gol: e.target.value})} className="w-full px-5 py-3.5 bg-gray-50 border-none rounded-2xl font-bold focus:ring-2 focus:ring-[#D4AF37]" placeholder="ગોળ લખો" />
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
                    <span className="text-sm font-bold text-gray-600">પરિવારનો પ્રથમ ગ્રેજ્યુએટ?</span>
-                   <input type="checkbox" checked={formData.isFirstGraduate} onChange={(e) => setFormData({...formData, isFirstGraduate: e.target.checked})} className="w-6 h-6 accent-mint" />
+                   <input type="checkbox" checked={formData.isFirstGraduate} onChange={(e) => setFormData({...formData, isFirstGraduate: e.target.checked})} className="w-6 h-6 accent-[#D4AF37]" />
                 </div>
 
-                <button onClick={handleSubmit} disabled={isSubmitting} className="w-full py-4 bg-deep-blue text-white rounded-[20px] font-black shadow-lg disabled:opacity-50 active:scale-95 transition-all mt-4 uppercase tracking-wider">
+                {/* ✅ Submit Button Gold Gradient */}
+                <button onClick={handleSubmit} disabled={isSubmitting} className="w-full py-4 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white rounded-[20px] font-black shadow-lg disabled:opacity-50 active:scale-95 transition-all mt-4 uppercase tracking-wider">
                     {isSubmitting ? <Loader2 className="animate-spin mx-auto" /> : 'માહિતી સેવ કરો'}
                 </button>
             </div>

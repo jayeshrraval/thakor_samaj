@@ -12,7 +12,7 @@ export default function NotificationsScreen() {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+   
   // વંચાયેલા નોટિફિકેશનના ID સ્ટોર કરવા માટે
   const [readNotifications, setReadNotifications] = useState(() => {
     const saved = localStorage.getItem('read_notifications');
@@ -29,7 +29,7 @@ export default function NotificationsScreen() {
       
       // લોજીક: એડમિન (Global) અને પર્સનલ બંને નોટિફિકેશન લાવો
       let query = supabase
-        .from('notifications') // ટેબલનું નામ ચેક કરી લેજો
+        .from('notifications') 
         .select('*')
         .eq('is_active', true);
 
@@ -58,7 +58,6 @@ export default function NotificationsScreen() {
   // ✅ નવું નોટિફિકેશન હોય તો બેલ વાગશે
   const checkForNewNotifications = (data) => {
     const savedReads = JSON.parse(localStorage.getItem('read_notifications') || '[]');
-    // જો કોઈ પણ એવું નોટિફિકેશન હોય જે read લિસ્ટમાં નથી, તો અવાજ કરો
     const hasUnread = data.some(n => !savedReads.includes(n.id));
     
     if (hasUnread) {
@@ -93,46 +92,51 @@ export default function NotificationsScreen() {
   // આઈકન લોજીક
   const getIcon = (type) => {
     switch (type) {
-      case 'matrimony': return <Heart className="w-6 h-6 text-pink-500 fill-pink-500" />;
-      case 'job': return <Briefcase className="w-6 h-6 text-purple-600" />;
-      case 'welcome': return <CheckCircle className="w-6 h-6 text-green-500" />;
-      case 'admin': return <Megaphone className="w-6 h-6 text-orange-500" />; // Admin માટે સ્પીકર
-      default: return <Bell className="w-6 h-6 text-blue-500" />;
+      case 'matrimony': return <Heart className="w-6 h-6 text-[#800000]" />; // Maroon Icon
+      case 'job': return <Briefcase className="w-6 h-6 text-[#B8860B]" />; // Gold Icon
+      case 'welcome': return <CheckCircle className="w-6 h-6 text-green-600" />;
+      case 'admin': return <Megaphone className="w-6 h-6 text-[#800000]" />; 
+      default: return <Bell className="w-6 h-6 text-[#800000]" />;
     }
   };
 
-  // કલર લોજીક
+  // કલર લોજીક (Themes updated to Maroon & Gold)
   const getBgColor = (type) => {
     switch (type) {
-      case 'matrimony': return 'bg-pink-50 border-pink-500';
-      case 'job': return 'bg-purple-50 border-purple-500';
-      case 'welcome': return 'bg-green-50 border-green-500';
-      case 'admin': return 'bg-orange-50 border-orange-500';
-      default: return 'bg-blue-50 border-blue-500';
+      case 'matrimony': return 'bg-[#800000]/10 border-[#800000]'; // Maroon Theme
+      case 'job': return 'bg-[#D4AF37]/10 border-[#D4AF37]'; // Gold Theme
+      case 'welcome': return 'bg-green-50 border-green-600';
+      case 'admin': return 'bg-[#800000]/5 border-[#800000]';
+      default: return 'bg-gray-50 border-gray-400';
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      <div className="bg-gradient-to-r from-mint to-teal-500 safe-area-top px-6 py-6 shadow-md">
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-gray-50 pb-24 font-gujarati">
+      
+      {/* ✅ Header: Maroon with Gold Glow */}
+      <div className="bg-[#800000] safe-area-top px-6 py-6 shadow-md relative overflow-hidden">
+        {/* Glow Effects */}
+        <div className="absolute top-[-50%] left-[-10%] w-64 h-64 bg-[#D4AF37] rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
+
+        <div className="flex items-center justify-between relative z-10">
           <div className="flex items-center space-x-3">
             <button
               onClick={() => navigate(-1)}
-              className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center active:scale-95 transition-transform"
+              className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center active:scale-95 transition-transform hover:bg-white/30"
             >
               <ArrowLeft className="w-5 h-5 text-white" />
             </button>
             <div>
               <h1 className="text-white font-bold text-2xl">નોટીફિકેશન</h1>
-              <p className="text-white/90 text-xs font-medium tracking-wide">
-                 તમારા અને સમાજના અપડેટ્સ
+              <p className="text-[#D4AF37] text-xs font-medium tracking-wide">
+                  તમારા અને સમાજના અપડેટ્સ
               </p>
             </div>
           </div>
           {/* Mark all Read Button */}
           {notifications.length > 0 && (
-             <button onClick={markAllAsRead} className="text-white text-xs bg-white/20 px-3 py-1.5 rounded-lg hover:bg-white/30 transition">
+             <button onClick={markAllAsRead} className="text-white text-xs bg-white/20 px-3 py-1.5 rounded-lg hover:bg-white/30 transition font-medium">
                બધું વાંચો
              </button>
           )}
@@ -142,7 +146,7 @@ export default function NotificationsScreen() {
       <div className="px-5 py-6 space-y-4">
         {loading ? (
            <div className="flex justify-center pt-20">
-             <Loader2 className="w-10 h-10 text-teal-600 animate-spin" />
+             <Loader2 className="w-10 h-10 text-[#800000] animate-spin" />
            </div>
         ) : notifications.length === 0 ? (
           <motion.div
@@ -176,7 +180,7 @@ export default function NotificationsScreen() {
 
                 <div className="flex items-start space-x-4">
                   <div className={`w-12 h-12 rounded-full ${style.split(' ')[0]} flex items-center justify-center flex-shrink-0`}>
-                     {getIcon(notification.type)}
+                      {getIcon(notification.type)}
                   </div>
                   <div className="flex-1">
                     <h3 className={`font-bold text-base mb-1 ${!isRead ? 'text-gray-900' : 'text-gray-600'}`}>

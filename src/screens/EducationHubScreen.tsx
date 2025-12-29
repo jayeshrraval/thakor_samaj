@@ -10,57 +10,52 @@ import {
 } from 'lucide-react';
 import BottomNav from '../components/BottomNav';
 
-interface EducationCard {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  subtitle: string;
-  gradient: string;
-  path: string;
-}
-
 export default function EducationHubScreen() {
   const navigate = useNavigate();
 
-  const educationCards: EducationCard[] = [
+  const educationCards = [
     {
       icon: BookOpen,
       title: 'વિદ્યાર્થી પ્રોફાઈલ',
       subtitle: 'વિદ્યાર્થીઓની માહિતી જુઓ અને ઉમેરો',
-      gradient: 'from-blue-500 to-indigo-600',
-      path: '/student-profile', // ✅ Corrected Path
+      gradient: 'from-[#800000] to-[#A00000]', // Maroon Gradient
+      path: '/student-profile', 
     },
     {
       icon: GraduationCap,
       title: 'સ્કોલરશિપ અને સહાય',
       subtitle: 'સ્કોલરશિપની માહિતી મેળવો',
-      gradient: 'from-emerald-500 to-teal-600',
-      path: '/scholarship', // ✅ Corrected Path
+      gradient: 'from-[#D4AF37] to-[#B8860B]', // Gold Gradient
+      path: '/scholarship', 
     },
     {
       icon: Star,
       title: 'સમાજના ગૌરવ',
       subtitle: 'સમાજના સફળ વ્યક્તિઓની ઓળખ',
-      gradient: 'from-amber-500 to-orange-600',
-      path: '/achievers', // ✅ Corrected Path
+      gradient: 'from-blue-600 to-indigo-700', // Royal Blue Gradient
+      path: '/achievers', 
     },
     {
       icon: Newspaper,
       title: 'આજનું શિક્ષણ માર્ગદર્શન',
       subtitle: 'દૈનિક શિક્ષણ માર્ગદર્શન પોસ્ટ',
-      gradient: 'from-rose-500 to-pink-600',
-      path: '/daily-guidance', // ✅ Corrected Path
+      gradient: 'from-emerald-500 to-teal-600', // Green Gradient
+      path: '/daily-guidance', 
     },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-deep-blue to-[#1A8FA3] safe-area-top">
-        <div className="px-6 py-6">
+      {/* Header: Maroon with Gold Glow */}
+      <div className="bg-[#800000] safe-area-top shadow-lg relative overflow-hidden">
+        {/* Glow Effects */}
+        <div className="absolute top-[-50%] left-[-10%] w-64 h-64 bg-[#D4AF37] rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
+
+        <div className="px-6 py-6 relative z-10">
           <div className="flex items-center space-x-4">
             <button
               onClick={() => navigate('/home')}
-              className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center"
+              className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-all"
             >
               <ArrowLeft className="w-5 h-5 text-white" />
             </button>
@@ -68,7 +63,7 @@ export default function EducationHubScreen() {
               <h1 className="text-white font-gujarati font-bold text-xl">
                 શિક્ષણ અને ભવિષ્ય
               </h1>
-              <p className="text-mint text-sm font-gujarati">
+              <p className="text-[#D4AF37] text-sm font-gujarati font-medium">
                 Education Hub
               </p>
             </div>
@@ -81,26 +76,29 @@ export default function EducationHubScreen() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="premium-card p-6 bg-gradient-to-br from-mint/20 to-white"
+          className="bg-white rounded-[24px] p-6 shadow-sm border border-gray-100 relative overflow-hidden"
         >
-          <h2 className="font-gujarati font-bold text-deep-blue text-lg mb-2">
+          {/* Decorative Circle */}
+          <div className="absolute top-0 right-0 w-24 h-24 bg-[#800000]/5 rounded-bl-[100px] pointer-events-none"></div>
+
+          <h2 className="font-gujarati font-bold text-[#800000] text-lg mb-3 flex items-center gap-2">
             🎯 હેતુ
           </h2>
-          <ul className="space-y-2 text-gray-700 font-gujarati text-sm">
+          <ul className="space-y-2 text-gray-700 font-gujarati text-sm relative z-10">
             <li className="flex items-start space-x-2">
-              <span className="text-mint mt-1">•</span>
+              <span className="text-[#D4AF37] mt-1 font-bold">•</span>
               <span>સમાજમાં શિક્ષણનું મહત્વ સમજાવવું</span>
             </li>
             <li className="flex items-start space-x-2">
-              <span className="text-mint mt-1">•</span>
+              <span className="text-[#D4AF37] mt-1 font-bold">•</span>
               <span>વિદ્યાર્થીઓને માર્ગદર્શન આપવું</span>
             </li>
             <li className="flex items-start space-x-2">
-              <span className="text-mint mt-1">•</span>
+              <span className="text-[#D4AF37] mt-1 font-bold">•</span>
               <span>માતા-પિતાને જાગૃત કરવું</span>
             </li>
             <li className="flex items-start space-x-2">
-              <span className="text-mint mt-1">•</span>
+              <span className="text-[#D4AF37] mt-1 font-bold">•</span>
               <span>Role-models showcase કરવું</span>
             </li>
           </ul>
@@ -119,17 +117,17 @@ export default function EducationHubScreen() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.08 }}
                 onClick={() => navigate(card.path)}
-                className="premium-card p-5 text-left hover:shadow-elevated transition-all active:scale-95"
+                className="bg-white rounded-[24px] p-5 text-left shadow-sm border border-gray-100 hover:shadow-md transition-all active:scale-95 flex flex-col items-start"
               >
                 <div
-                  className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${card.gradient} flex items-center justify-center mb-4 shadow-lg`}
+                  className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${card.gradient} flex items-center justify-center mb-4 shadow-lg`}
                 >
-                  <Icon className="w-7 h-7 text-white" />
+                  <Icon className="w-6 h-6 text-white" strokeWidth={2.5} />
                 </div>
-                <h3 className="font-gujarati font-semibold text-gray-800 text-sm leading-tight mb-1">
+                <h3 className="font-gujarati font-bold text-gray-800 text-sm leading-tight mb-1">
                   {card.title}
                 </h3>
-                <p className="font-gujarati text-gray-500 text-xs leading-tight">
+                <p className="font-gujarati text-gray-500 text-[10px] leading-tight font-medium">
                   {card.subtitle}
                 </p>
               </motion.button>
@@ -144,9 +142,9 @@ export default function EducationHubScreen() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="premium-card p-6 bg-gradient-to-br from-royal-gold/10 to-white border-l-4 border-royal-gold"
+          className="bg-gradient-to-r from-[#800000]/5 to-white p-6 rounded-[24px] border-l-4 border-[#800000]"
         >
-          <p className="font-gujarati text-gray-700 text-sm italic">
+          <p className="font-gujarati text-[#800000] text-sm italic font-medium">
             "એક અનુભવી વ્યક્તિ = અનેક ભવિષ્ય બચાવી શકે"
           </p>
         </motion.div>

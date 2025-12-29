@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Smartphone, Loader2, AlertCircle } from 'lucide-react'; // Fingerprint કાઢી નાખ્યું (વપરાતું નહોતું)
-import { supabase } from '../supabaseClient'; 
+import { Smartphone, Loader2, AlertCircle } from 'lucide-react';
+import { supabase } from '../lib/supabase'; // ⚠️ જો આ પાથ અલગ હોય તો સુધારી લેજો (દા.ત. '../supabaseClient')
 
 export default function LoginScreen() {
-  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
+  const [activeTab, setActiveTab] = useState('login');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const navigate = useNavigate();
@@ -20,13 +20,13 @@ export default function LoginScreen() {
   });
 
   // Handle Input Change
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     setErrorMsg(''); 
   };
 
   // 🛠 REGISTER FUNCTION
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg('');
@@ -63,7 +63,7 @@ export default function LoginScreen() {
 
       alert('રજીસ્ટ્રેશન સફળ! હવે લોગિન કરો.');
       setActiveTab('login');
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
       setErrorMsg(error.message || 'રજીસ્ટ્રેશનમાં ભૂલ છે.');
     } finally {
@@ -72,7 +72,7 @@ export default function LoginScreen() {
   };
 
   // 🔐 LOGIN FUNCTION
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg('');
@@ -87,7 +87,7 @@ export default function LoginScreen() {
 
       if (error) throw error;
       navigate('/home');
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
       setErrorMsg('મોબાઈલ નંબર અથવા પાસવર્ડ ખોટો છે.');
     } finally {
@@ -96,27 +96,34 @@ export default function LoginScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-deep-blue via-[#1A8FA3] to-mint flex flex-col safe-area-top safe-area-bottom">
+    // ✅ ફેરફાર ૧: બેકગ્રાઉન્ડ મરૂન (#800000)
+    <div className="min-h-screen bg-[#800000] flex flex-col safe-area-top safe-area-bottom relative overflow-hidden">
+      
+      {/* પાછળ થોડો ગોલ્ડન ગ્લો (સજાવટ માટે) */}
+      <div className="absolute top-[-50px] left-[-50px] w-60 h-60 bg-[#D4AF37] rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
+
       {/* Header */}
-      <div className="text-center pt-12 pb-8 px-6">
+      <div className="text-center pt-12 pb-8 px-6 relative z-10">
         <motion.h1
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-3xl font-bold text-white font-gujarati mb-2"
         >
-          યોગી સમાજ સંબંધ
+          ઠાકોર સમાજ સંગઠન
         </motion.h1>
-        <p className="text-mint text-sm">સ્વાગત છે</p>
+        {/* ✅ ફેરફાર ૨: ટેક્સ્ટ કલર ગોલ્ડન */}
+        <p className="text-[#D4AF37] text-sm font-medium tracking-wide">સ્વાગત છે 🙏</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-2 px-6 mb-6">
+      <div className="flex space-x-2 px-6 mb-6 relative z-10">
         <button
           onClick={() => { setActiveTab('login'); setErrorMsg(''); }}
           className={`flex-1 py-3 rounded-2xl font-gujarati font-medium transition-all ${
             activeTab === 'login'
-              ? 'bg-white text-deep-blue shadow-lg'
-              : 'bg-white/20 text-white'
+              // ✅ ફેરફાર ૩: એક્ટિવ ટેબ સફેદ અને મરૂન અક્ષર
+              ? 'bg-white text-[#800000] shadow-lg'
+              : 'bg-white/10 text-white hover:bg-white/20'
           }`}
         >
           પ્રવેશ કરો
@@ -125,16 +132,16 @@ export default function LoginScreen() {
           onClick={() => { setActiveTab('register'); setErrorMsg(''); }}
           className={`flex-1 py-3 rounded-2xl font-gujarati font-medium transition-all ${
             activeTab === 'register'
-              ? 'bg-white text-deep-blue shadow-lg'
-              : 'bg-white/20 text-white'
+              ? 'bg-white text-[#800000] shadow-lg'
+              : 'bg-white/10 text-white hover:bg-white/20'
           }`}
         >
           નવું એકાઉન્ટ
         </button>
       </div>
 
-      {/* Content Card */}
-      <div className="flex-1 bg-white rounded-t-[2rem] px-6 pt-8 pb-6 overflow-y-auto">
+      {/* Content Card (White Background) */}
+      <div className="flex-1 bg-white rounded-t-[2rem] px-6 pt-8 pb-6 overflow-y-auto shadow-[0_-10px_40px_rgba(0,0,0,0.2)]">
         {errorMsg && (
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
@@ -156,7 +163,8 @@ export default function LoginScreen() {
                 value={formData.fullName}
                 onChange={handleChange}
                 placeholder="તમારું પૂરું નામ"
-                className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-mint font-gujarati"
+                // ✅ ફેરફાર ૪: ફોકસ રીંગ ગોલ્ડન
+                className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37] font-gujarati"
                 required
               />
             </div>
@@ -171,7 +179,7 @@ export default function LoginScreen() {
               onChange={handleChange}
               placeholder="10 અંકો નો નંબર"
               maxLength={10}
-              className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-mint font-gujarati"
+              className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37] font-gujarati tracking-widest"
               required
             />
           </div>
@@ -184,7 +192,7 @@ export default function LoginScreen() {
                 name="dob"
                 value={formData.dob}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-mint font-gujarati"
+                className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37] font-gujarati"
                 required
               />
             </div>
@@ -198,7 +206,7 @@ export default function LoginScreen() {
               value={formData.password}
               onChange={handleChange}
               placeholder="પાસવર્ડ દાખલ કરો"
-              className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-mint font-gujarati"
+              className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37] font-gujarati"
               required
             />
           </div>
@@ -212,16 +220,21 @@ export default function LoginScreen() {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 placeholder="ફરીથી પાસવર્ડ લખો"
-                className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-mint font-gujarati"
+                className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37] font-gujarati"
                 required
               />
             </div>
           )}
 
+          {/* ✅ ફેરફાર ૫: બટન ગોલ્ડન (Login) અથવા મરૂન (Register) */}
           <button
             type="submit"
             disabled={loading}
-            className={`w-full ${activeTab === 'login' ? 'bg-mint' : 'bg-deep-blue text-white'} font-gujarati font-semibold py-4 rounded-2xl transition-all shadow-lg flex justify-center items-center`}
+            className={`w-full font-gujarati font-bold py-4 rounded-2xl transition-all shadow-lg flex justify-center items-center text-white
+              ${activeTab === 'login' 
+                ? 'bg-gradient-to-r from-[#D4AF37] to-[#B8860B] shadow-[#D4AF37]/30' // Login માટે ગોલ્ડન
+                : 'bg-[#800000] shadow-[#800000]/30' // Register માટે મરૂન
+              }`}
           >
             {loading ? <Loader2 className="animate-spin w-5 h-5" /> : activeTab === 'login' ? 'લોગિન કરો' : 'રજીસ્ટર કરો'}
           </button>
@@ -231,7 +244,8 @@ export default function LoginScreen() {
               <button
                 type="button"
                 onClick={() => navigate('/forgot-password')}
-                className="text-deep-blue text-sm font-gujarati hover:underline"
+                // ✅ ફેરફાર ૬: લિંક કલર મરૂન
+                className="text-[#800000] text-sm font-gujarati hover:underline font-medium"
               >
                 પાસવર્ડ ભૂલી ગયા?
               </button>
@@ -241,7 +255,7 @@ export default function LoginScreen() {
               <button
                 type="button"
                 onClick={() => setActiveTab(activeTab === 'login' ? 'register' : 'login')}
-                className="text-deep-blue font-semibold hover:underline"
+                className="text-[#D4AF37] font-bold hover:underline"
               >
                 {activeTab === 'login' ? 'રજીસ્ટર કરો' : 'લોગિન કરો'}
               </button>

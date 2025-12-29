@@ -1,8 +1,8 @@
-# YOUWARE.md - યોગી સમાજ સંબંધ Mobile Web App
+# YOUWARE.md - ઠાકોર સમાજ સંગઠન Mobile Web App
 
 ## Project Overview
 
-**યોગી સમાજ સંબંધ (Yogi Samaj Sambandh)** is a premium Gujarati matrimony and community mobile web application built for the Raval Yogi Samaj community. Includes **family registration system** and **education hub module** with real backend data persistence.
+**ઠાકોર સમાજ સંગઠન (Thakor Samaj Sangthan)** is a premium Gujarati matrimony and community mobile web application built for the Thakor Samaj community. Includes **family registration system** and **education hub module** with real backend data persistence.
 
 **Project Type**: Mobile-first React Web Application (simulating native mobile experience)  
 **Technology Stack**: React 18 + TypeScript + Vite + Tailwind CSS + Framer Motion  

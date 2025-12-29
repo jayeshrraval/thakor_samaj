@@ -14,7 +14,7 @@ export default function SubscriptionScreen() {
       nameEn: 'Monthly Membership Fee',
       price: '₹49',
       period: '/મહિનો',
-      color: 'from-mint to-teal-500',
+      color: 'from-[#800000] to-[#A00000]', // Maroon Gradient
       icon: Zap,
       badge: null,
     },
@@ -24,7 +24,7 @@ export default function SubscriptionScreen() {
       nameEn: 'Yearly Membership Fee',
       price: '₹480',
       period: '/વર્ષ',
-      color: 'from-royal-gold to-yellow-600',
+      color: 'from-[#D4AF37] to-[#B8860B]', // Gold Gradient
       icon: Crown,
       badge: 'Best Value',
       savings: '₹108 બચત',
@@ -46,17 +46,20 @@ export default function SubscriptionScreen() {
     'Ad-free experience',
   ];
 
-  const handleSubscribe = (planName: string) => {
+  const handleSubscribe = (planName) => {
     alert(`તમે ${planName} પસંદ કર્યો છે. પેમેન્ટ સુવિધા ટૂંક સમયમાં શરૂ થશે.`);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-deep-blue via-[#1A8FA3] to-mint pb-24">
-      {/* Header */}
-      <div className="safe-area-top px-6 py-8 text-center relative">
+    <div className="min-h-screen bg-gray-50 pb-24 font-gujarati">
+      {/* Header: Maroon with Gold Glow */}
+      <div className="bg-[#800000] safe-area-top px-6 py-8 text-center relative overflow-hidden shadow-lg">
+        {/* Glow Effects */}
+        <div className="absolute top-[-50%] left-[-10%] w-64 h-64 bg-[#D4AF37] rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
+
         <button 
             onClick={() => navigate(-1)} 
-            className="absolute top-8 left-6 p-2 bg-white/20 rounded-full text-white"
+            className="absolute top-8 left-6 p-2 bg-white/20 rounded-full text-white hover:bg-white/30 transition-all z-10"
         >
             <ArrowLeft className="w-6 h-6" />
         </button>
@@ -64,29 +67,29 @@ export default function SubscriptionScreen() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="inline-block mb-4"
+          className="inline-block mb-4 relative z-10"
         >
-          <div className="w-20 h-20 rounded-full bg-royal-gold/20 flex items-center justify-center mx-auto">
-            <Heart className="w-10 h-10 text-royal-gold fill-royal-gold" />
+          <div className="w-20 h-20 rounded-full bg-[#D4AF37]/20 flex items-center justify-center mx-auto border-2 border-[#D4AF37]/30">
+            <Heart className="w-10 h-10 text-[#D4AF37] fill-[#D4AF37]" />
           </div>
         </motion.div>
-        <h1 className="text-white font-gujarati font-bold text-3xl mb-2">મેમ્બરશીપ ફી</h1>
-        <p className="text-white/80 text-sm">સમાજનું ઉત્થાન, આપણી જવાબદારી</p>
+        <h1 className="text-white font-bold text-3xl mb-2 relative z-10">મેમ્બરશીપ ફી</h1>
+        <p className="text-[#D4AF37] text-sm relative z-10 font-medium">સમાજનું ઉત્થાન, આપણી જવાબદારી</p>
       </div>
 
-      <div className="px-6 space-y-6">
+      <div className="px-6 space-y-6 mt-6">
         
         {/* 🚨 THE MANDATORY MESSAGE BOX */}
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white/95 backdrop-blur-sm border-l-8 border-yellow-500 p-5 rounded-2xl shadow-2xl"
+          className="bg-white/95 backdrop-blur-sm border-l-8 border-[#800000] p-5 rounded-2xl shadow-md"
         >
           <div className="flex items-start gap-4">
-            <div className="bg-yellow-100 p-2 rounded-full shrink-0">
-                <Info className="text-yellow-700 w-6 h-6" />
+            <div className="bg-[#800000]/10 p-2 rounded-full shrink-0">
+                <Info className="text-[#800000] w-6 h-6" />
             </div>
-            <p className="text-gray-800 font-bold leading-relaxed text-[15px] font-gujarati">
+            <p className="text-gray-800 font-bold leading-relaxed text-[15px]">
               "આ એપ સમાજ માટે મફત છે, પણ સમાજના વિકાસ માટે દરેક સભ્યે સ્વૈચ્છિક ફાળો (Voluntary Donation) અથવા લવાજમ (Membership Fee) આપવું ફરજિયાત છે."
             </p>
           </div>
@@ -101,10 +104,10 @@ export default function SubscriptionScreen() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.2 }}
-              className="premium-card p-6 relative overflow-hidden bg-white rounded-3xl shadow-lg"
+              className="bg-white p-6 relative overflow-hidden rounded-[30px] shadow-lg border border-gray-100 hover:shadow-xl transition-all"
             >
               {plan.badge && (
-                <div className="absolute top-4 right-4 bg-gradient-to-r from-royal-gold to-yellow-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-gold">
+                <div className="absolute top-4 right-4 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
                   {plan.badge}
                 </div>
               )}
@@ -114,20 +117,20 @@ export default function SubscriptionScreen() {
                   <Icon className="w-8 h-8 text-white" strokeWidth={2} />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-gujarati font-bold text-xl text-gray-800 mb-1">
+                  <h3 className="font-bold text-xl text-gray-800 mb-1 leading-tight">
                     {plan.name}
                   </h3>
-                  <p className="text-sm text-gray-600">{plan.nameEn}</p>
+                  <p className="text-sm text-gray-500 font-medium">{plan.nameEn}</p>
                 </div>
               </div>
 
               <div className="mb-6">
                 <div className="flex items-baseline space-x-2">
-                  <span className="text-4xl font-bold text-deep-blue">{plan.price}</span>
-                  <span className="text-gray-600 font-gujarati">{plan.period}</span>
+                  <span className="text-4xl font-black text-[#800000]">{plan.price}</span>
+                  <span className="text-gray-500 font-bold">{plan.period}</span>
                 </div>
                 {plan.savings && (
-                  <p className="text-green-600 text-sm font-gujarati font-semibold mt-2">
+                  <p className="text-green-600 text-sm font-bold mt-2 bg-green-50 w-fit px-2 py-0.5 rounded-lg">
                     {plan.savings}
                   </p>
                 )}
@@ -135,7 +138,7 @@ export default function SubscriptionScreen() {
 
               <button 
                 onClick={() => handleSubscribe(plan.name)}
-                className={`w-full bg-gradient-to-r ${plan.color} text-white font-gujarati font-semibold py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all active:scale-95`}
+                className={`w-full bg-gradient-to-r ${plan.color} text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all active:scale-95 uppercase tracking-wider text-sm`}
               >
                 સભ્યપદ મેળવો
               </button>
@@ -148,9 +151,9 @@ export default function SubscriptionScreen() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="premium-card p-6 bg-white rounded-3xl"
+          className="bg-white p-6 rounded-[30px] shadow-sm border border-gray-100"
         >
-          <h3 className="font-gujarati font-bold text-xl text-gray-800 mb-6 text-center border-b pb-2">
+          <h3 className="font-bold text-xl text-[#800000] mb-6 text-center border-b border-gray-100 pb-2">
              સભ્યપદના લાભો
           </h3>
           <div className="space-y-4">
@@ -162,10 +165,10 @@ export default function SubscriptionScreen() {
                 transition={{ delay: 0.5 + index * 0.05 }}
                 className="flex items-start space-x-3"
               >
-                <div className="w-6 h-6 rounded-full bg-mint/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Check className="w-4 h-4 text-deep-blue" strokeWidth={3} />
+                <div className="w-6 h-6 rounded-full bg-[#D4AF37]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Check className="w-4 h-4 text-[#800000]" strokeWidth={3} />
                 </div>
-                <p className={`text-gray-700 ${index % 2 === 0 ? 'font-gujarati font-medium' : 'text-sm'}`}>
+                <p className={`text-gray-700 ${index % 2 === 0 ? 'font-bold' : 'text-sm'}`}>
                   {benefit}
                 </p>
               </motion.div>
