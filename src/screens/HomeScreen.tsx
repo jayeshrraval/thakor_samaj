@@ -67,7 +67,7 @@ export default function HomeScreen() {
       if (user) {
         const { data: userData } = await supabase.from('users').select('full_name, avatar_url').eq('id', user.id).maybeSingle();
         if (userData) {
-          setUserName(userData.full_name || user.user_metadata?.full_name || 'Yogi Member');
+          setUserName(userData.full_name || user.user_metadata?.full_name || 'Thakor Member');
           setUserPhoto(userData.avatar_url);
         }
         const { count: userCount } = await supabase.from('users').select('*', { count: 'exact', head: true });

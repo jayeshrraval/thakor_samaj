@@ -148,7 +148,7 @@ export default function StudentProfileScreen() {
           </button>
           <div>
             <h1 className="text-white font-gujarati font-bold text-xl">વિદ્યાર્થી પ્રોફાઈલ</h1>
-            <p className="text-mint text-xs font-medium uppercase tracking-widest">Yogi Students</p>
+            <p className="text-mint text-xs font-medium uppercase tracking-widest">Thakor Students</p>
           </div>
         </div>
 
